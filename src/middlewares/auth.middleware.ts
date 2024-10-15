@@ -52,7 +52,7 @@ const AuthMiddleware = async (req: Request, res: Response, next: NextFunction) =
         if (error instanceof PrismaClientValidationError) {
             res.status(500).json({ error: "Prisma validation error", details: error.message });
         } else {
-            res.status(500).json({ error: error.message });
+            res.status(401).json(error);
         }
     } finally {
         await prisma.$disconnect();

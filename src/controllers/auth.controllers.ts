@@ -1,9 +1,12 @@
+import jwt, { JwtPayload }  from 'jsonwebtoken';
 import {LoginSchema, RegisterSchema} from '../config/auth.zod';
 import { Request, Response } from 'express';
 import { ApiError } from '../utils/apiError';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { generateAccessToken, generateRefreshToken } from '../utils/generateTokens';
+import { error } from 'console';
+import { REFRESH_TOKEN_SECRET } from '../config/config';
 
 const cookieOptions = {
     httpOnly: true,
@@ -75,8 +78,9 @@ const RegisterController = async (req: Request, res: Response) => {
                 refreshTokenExpiresAt: refreshExpires
               });
 
-    } catch (error) {
-        res.json(error)
+    } catch (error: any) {
+        res.status(error.statusCode)
+        .json(error)
     } finally {
         await prisma.$disconnect();
     }
@@ -102,7 +106,7 @@ const LoginController = async (req: Request, res: Response) => {
             });
             if(!user){
                throw new ApiError(
-                    400,
+                    404,
                     "User does not exists please register.", 
                     [{
                         message: "User does not exists please register."
@@ -149,8 +153,9 @@ const LoginController = async (req: Request, res: Response) => {
                 refreshTokenExpiresAt: refreshExpires
               });
 
-    } catch (error) {
-        res.json(error)
+    } catch (error: any) {
+        res.status(error.statusCode)
+        .json(error)
     } finally {
         await prisma.$disconnect();
     }
@@ -186,8 +191,91 @@ const LogoutController = async (req: Request, res: Response) => {
     }
 }
 
+const AuthCheckController = (req: Request, res: Response) => {
+    res.status(200)
+       .json({
+            status: "Authorized",
+            isActive: true,
+            message: "Token is valid"
+       }) 
+}
+
+const RefreshController = async (req: Request, res: Response) => {
+ 
+    const prisma = new PrismaClient();
+
+    try {
+        const incommingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+        if(!incommingRefreshToken){
+            throw new ApiError(
+                401,
+                "Unauthorized Request",
+                [{
+                    error: "Unauthorized"
+                }]
+            )
+        }
+
+        const result = jwt.verify(incommingRefreshToken, REFRESH_TOKEN_SECRET) as JwtPayload;
+
+        const user = await prisma.user.findFirst({
+            where: {
+                id: result.uset_id
+            },
+            select: {
+                id: true,        // Include required fields explicitly
+                orgName: true,
+                username: true,
+                email: true,
+                phone: true,
+                refreshToken: true
+            }
+        });
+
+        if(!user){
+            throw new ApiError(
+                404,
+                "Invalid Token Credentials",
+                [{
+                    error: "Invalid User Token Credentials"
+                }]
+            )
+        }
+
+        if(incommingRefreshToken !== user?.refreshToken){
+            throw new ApiError(
+                401,
+                "Invalid Token",
+                [{
+                    error: "Unauthorized request"
+                }]
+            )
+        }
+
+        const {accessExpires, accessToken} = generateAccessToken(user.id);
+
+        res.status(200)
+           .cookie('accessToken', accessToken, cookieOptions) 
+           .json({
+                status: "Success",
+                accessToken,
+                ExpiresAt: accessExpires
+           });
+
+    } catch (error: any) {
+        res.status(error.statusCode || 500)
+            .json(error)
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+
+// Need to add Forget Password, Change Password.
+
 export {
     RegisterController,
     LoginController,
-    LogoutController
+    LogoutController,
+    AuthCheckController,
+    RefreshController
 }
