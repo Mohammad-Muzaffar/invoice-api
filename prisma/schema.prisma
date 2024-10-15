@@ -195,11 +195,11 @@ model User {
   phone                 String?
   password              String
   createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @updatedAt
+  updatedAt             DateTime?   @updatedAt
   customers             Customer[]
-  refreshToken          String     @unique
-  refreshTokenExpiresAt DateTime
-  product               Product[]
+  refreshToken          String?     @unique
+  refreshTokenExpiresAt DateTime?
+  products               Product[]
 }
 
 enum GstType {
