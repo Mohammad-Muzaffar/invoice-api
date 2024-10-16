@@ -2,6 +2,7 @@ import express from 'express';
 import { 
         AuthCheckController, 
         ChangePasswordController, 
+        ForgotPasswordController, 
         LoginController, 
         LogoutController, 
         RefreshController, 
@@ -14,6 +15,7 @@ const router = express.Router();
 // public:
 router.route('/register').post(RegisterController);
 router.route('/login').post(LoginController);
+router.route('/forgot-password').post(ForgotPasswordController);
 
 // private:
 router.route('/refresh').post(RefreshController);

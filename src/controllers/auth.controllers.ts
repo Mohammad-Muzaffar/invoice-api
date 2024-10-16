@@ -1,5 +1,11 @@
 import jwt, { JwtPayload }  from 'jsonwebtoken';
-import {LoginSchema, RegisterSchema, ChangePasswordSchema} from '../config/auth.zod';
+import {
+        LoginSchema, 
+        RegisterSchema, 
+        ChangePasswordSchema, 
+        ForgotPasswordSchema, 
+        VerifyForgotPasswordSchema
+} from '../config/auth.zod';
 import { Request, Response } from 'express';
 import { ApiError } from '../utils/apiError';
 import { PrismaClient } from '@prisma/client';
@@ -7,6 +13,7 @@ import bcrypt from 'bcrypt';
 import { generateAccessToken, generateRefreshToken } from '../utils/generateTokens';
 import { error } from 'console';
 import { REFRESH_TOKEN_SECRET } from '../config/config';
+import { SendForgotPasswordMail } from '../utils/sendEmails';
 
 const twoDays = 2 * 24 * 60 * 60 * 1000;
 const fifteenDays = 15 * 24 * 60 * 60 * 1000;
@@ -341,6 +348,89 @@ const ChangePasswordController = async (req: Request, res: Response) => {
 }
 
 // Need to add Forget Password with otp.
+// Need 2 Controllers:
+// 1. to take user email ->
+    // check if it exists in db
+    // if yes generate an otp hash it save it to db and sent to user email.
+// 2. User will send the otp to onother endpoint
+    // match it with the otp stored for user and verify it use bcrypt.compare()
+    // Also take new password as input and set the new password as password for user after otp verification
+    // Delete the otp row from table.
+
+const ForgotPasswordController = async (req: Request, res: Response) => {
+    const prisma = new PrismaClient();
+    try {
+        const {success, error} = ForgotPasswordSchema.safeParse(req.body);
+        if(!success){
+            throw new ApiError(
+                403,
+                "Payload does not contain an email field",
+                [error]
+            )
+        }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                email: req.body.email
+            },
+            select: {
+                id: true,
+                email: true,
+                phone: true
+            }
+        })
+        if(!user){
+            throw new ApiError(
+                404,
+                "User does not exists!",
+                ["User does not exists!"]
+            );
+        }
+
+        const otp = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+        const hashedOtp = await bcrypt.hash(otp.toString(), 11)
+        const GeneratedOtp = await prisma.otp.create({
+            data:{
+                createdAt: new Date(),
+                userId: user.id,
+                otp: hashedOtp
+            }
+        });
+        if(!GeneratedOtp){
+            throw new ApiError(
+                500,
+                "",
+                ["Something went wrong while generating otp"]
+            );
+        }
+
+        // send mail here
+        const emailsent = await SendForgotPasswordMail({otp, to: user.email});
+        if(!emailsent){
+            throw new ApiError(
+                500,
+                "Internal Server Error",
+                ["Something went wrong while sending the email."]
+            )
+        }
+
+        res.status(200)
+        .json({
+            status: "Success",
+            message: `Email with otp has been sent to ${user.email}.`,
+            id: GeneratedOtp.id,
+            user_id: user.id 
+        })
+            
+    } catch (error: any) {
+        res.status(error.statusCode || 500)
+        .json(error)
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+
+
 
 export {
     RegisterController,
@@ -348,5 +438,6 @@ export {
     LogoutController,
     AuthCheckController,
     RefreshController,
-    ChangePasswordController
+    ChangePasswordController,
+    ForgotPasswordController
 }

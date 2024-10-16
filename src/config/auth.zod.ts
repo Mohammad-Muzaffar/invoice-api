@@ -19,8 +19,19 @@ const ChangePasswordSchema = zod.object({
     newPassword: zod.string().min(8, "New Password should be of minimum length 8.")
 });
 
+const ForgotPasswordSchema = zod.object({
+    email: zod.string().email()
+});
+
+const VerifyForgotPasswordSchema = zod.object({
+    newPassword: zod.string().min(8, "Password must be of length of 8 characters."),
+    otp: zod.string().min(6,"Otp must be of length 6").max(6, "Otp must be of length 6")
+});
+
 export {
     RegisterSchema,
     LoginSchema,
-    ChangePasswordSchema
+    ChangePasswordSchema,
+    ForgotPasswordSchema,
+    VerifyForgotPasswordSchema
 }
