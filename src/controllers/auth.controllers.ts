@@ -1,5 +1,5 @@
 import jwt, { JwtPayload }  from 'jsonwebtoken';
-import {LoginSchema, RegisterSchema} from '../config/auth.zod';
+import {LoginSchema, RegisterSchema, ChangePasswordSchema} from '../config/auth.zod';
 import { Request, Response } from 'express';
 import { ApiError } from '../utils/apiError';
 import { PrismaClient } from '@prisma/client';
@@ -8,10 +8,21 @@ import { generateAccessToken, generateRefreshToken } from '../utils/generateToke
 import { error } from 'console';
 import { REFRESH_TOKEN_SECRET } from '../config/config';
 
-const cookieOptions = {
+const twoDays = 2 * 24 * 60 * 60 * 1000;
+const fifteenDays = 15 * 24 * 60 * 60 * 1000;
+
+const cookieOptionsTwoDays = {
     httpOnly: true,
-    secure: true
+    secure: true,
+    maxAge: twoDays
 }
+
+const cookieOptionsFifteenDays = {
+    httpOnly: true,
+    secure: true,
+    maxAge: fifteenDays
+}
+
 
 const RegisterController = async (req: Request, res: Response) => {
     const prisma = new PrismaClient();
@@ -68,8 +79,8 @@ const RegisterController = async (req: Request, res: Response) => {
            });
 
            res.status(200)
-              .cookie('accessToken', accessToken, cookieOptions)
-              .cookie('refreshToken', refreshToken, cookieOptions)
+              .cookie('accessToken', accessToken, cookieOptionsTwoDays)
+              .cookie('refreshToken', refreshToken, cookieOptionsFifteenDays)
               .json({
                 status: "Success",
                 accessToken,
@@ -143,8 +154,8 @@ const LoginController = async (req: Request, res: Response) => {
            });
 
            res.status(200)
-              .cookie('accessToken', accessToken, cookieOptions)
-              .cookie('refreshToken', refreshToken, cookieOptions)
+              .cookie('accessToken', accessToken, cookieOptionsTwoDays)
+              .cookie('refreshToken', refreshToken, cookieOptionsFifteenDays)
               .json({
                 status: "Success",
                 accessToken,
@@ -176,8 +187,8 @@ const LogoutController = async (req: Request, res: Response) => {
         });
 
         res.status(200)
-           .clearCookie("accessToken", cookieOptions)
-           .clearCookie("refreshToken", cookieOptions)
+           .clearCookie("accessToken", cookieOptionsTwoDays)
+           .clearCookie("refreshToken", cookieOptionsFifteenDays)
            .json({
                 message: "User Logged Out."
            }); 
@@ -255,7 +266,7 @@ const RefreshController = async (req: Request, res: Response) => {
         const {accessExpires, accessToken} = generateAccessToken(user.id);
 
         res.status(200)
-           .cookie('accessToken', accessToken, cookieOptions) 
+           .cookie('accessToken', accessToken, cookieOptionsTwoDays) 
            .json({
                 status: "Success",
                 accessToken,
@@ -270,12 +281,72 @@ const RefreshController = async (req: Request, res: Response) => {
     }
 }
 
-// Need to add Forget Password, Change Password.
+const ChangePasswordController = async (req: Request, res: Response) => {
+    const prisma = new PrismaClient();
+    try {
+        const {success, error} = ChangePasswordSchema.safeParse(req.body);
+        if(!success){
+            throw new ApiError(
+                400, 
+                "Zod Validation Failed Please check the payload.",
+                [error]  
+            );
+        }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                id: req.body.userDetails.id
+            },
+            select: {
+                password: true,
+                email: true
+            }
+        }) || {password: ""};
+
+        const matchPassword =  await bcrypt.compare(req.body.oldPassword, user.password);
+        if(!matchPassword){
+            throw new ApiError(
+                400,
+                "User credentials(old password) does not match",
+                [{
+                    message: "User credentials does not match."
+                }]
+            );
+        }
+
+        const hashedPassword = await bcrypt.hash(req.body.newPassword, 11);
+
+        await prisma.user.update({
+            where: {
+                id: req.body.userDetails.id
+            },
+            data: {
+                password: hashedPassword,
+                updatedAt: new Date()
+            }
+        });
+
+        res.status(200)
+            .json({
+                status: "Success",
+                message: "User Password Updated Successfully"
+            });
+
+    } catch (error: any) {
+        res.status(error.statusCode || 500)
+        .json(error)
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+
+// Need to add Forget Password with otp.
 
 export {
     RegisterController,
     LoginController,
     LogoutController,
     AuthCheckController,
-    RefreshController
+    RefreshController,
+    ChangePasswordController
 }
