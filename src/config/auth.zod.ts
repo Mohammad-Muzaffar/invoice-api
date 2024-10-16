@@ -14,7 +14,13 @@ const LoginSchema = zod.object({
     password: zod.string().min(8,"Password should be atleast 8 characters.")   
 });
 
+const ChangePasswordSchema = zod.object({
+    oldPassword: zod.string().min(8, "Old Password should be of minimum length 8 or more."),
+    newPassword: zod.string().min(8, "New Password should be of minimum length 8.")
+});
+
 export {
     RegisterSchema,
-    LoginSchema
+    LoginSchema,
+    ChangePasswordSchema
 }
