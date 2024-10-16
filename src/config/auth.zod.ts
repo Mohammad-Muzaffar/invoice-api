@@ -1,37 +1,50 @@
-import zod from 'zod';
+import zod from "zod";
 
 const RegisterSchema = zod.object({
-    orgName: zod.string(),               
-    username: zod.string(), 
-    email: zod.string().email("Enter a valid email."),    
-    gstNumber: zod.string().min(15, 'GST Number Should be atleast 15 characters.').max(15,'GST Number Should be atleast 15 character.'),
-    phone: zod.string().optional(),                 
-    password: zod.string().min(8,"Password should be atleast 8 characters.")              
+  orgName: zod.string(),
+  username: zod.string(),
+  email: zod.string().email("Enter a valid email."),
+  gstNumber: zod
+    .string()
+    .min(15, "GST Number Should be atleast 15 characters.")
+    .max(15, "GST Number Should be atleast 15 character."),
+  phone: zod.string().optional(),
+  password: zod.string().min(8, "Password should be atleast 8 characters."),
 });
 
 const LoginSchema = zod.object({
-    email: zod.string().email("Enter a valid email."),
-    password: zod.string().min(8,"Password should be atleast 8 characters.")   
+  email: zod.string().email("Enter a valid email."),
+  password: zod.string().min(8, "Password should be atleast 8 characters."),
 });
 
 const ChangePasswordSchema = zod.object({
-    oldPassword: zod.string().min(8, "Old Password should be of minimum length 8 or more."),
-    newPassword: zod.string().min(8, "New Password should be of minimum length 8.")
+  oldPassword: zod
+    .string()
+    .min(8, "Old Password should be of minimum length 8 or more."),
+  newPassword: zod
+    .string()
+    .min(8, "New Password should be of minimum length 8."),
 });
 
 const ForgotPasswordSchema = zod.object({
-    email: zod.string().email()
+  email: zod.string().email(),
 });
 
 const VerifyForgotPasswordSchema = zod.object({
-    newPassword: zod.string().min(8, "Password must be of length of 8 characters."),
-    otp: zod.string().min(6,"Otp must be of length 6").max(6, "Otp must be of length 6")
+  newPassword: zod
+    .string()
+    .min(8, "Password must be of length of 8 characters."),
+  otp: zod
+    .string()
+    .min(6, "Otp must be of length 6")
+    .max(6, "Otp must be of length 6"),
+  email: zod.string().email(),
 });
 
 export {
-    RegisterSchema,
-    LoginSchema,
-    ChangePasswordSchema,
-    ForgotPasswordSchema,
-    VerifyForgotPasswordSchema
-}
+  RegisterSchema,
+  LoginSchema,
+  ChangePasswordSchema,
+  ForgotPasswordSchema,
+  VerifyForgotPasswordSchema,
+};

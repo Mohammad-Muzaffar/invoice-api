@@ -205,7 +205,7 @@ model User {
 
 model Otp {
   id        String    @id @default(cuid())
-  otp       String?   @unique
+  otp       String   @unique
   user      User      @relation(fields: [userId], references: [id])
   userId    String
   createdAt DateTime  @default(now())
