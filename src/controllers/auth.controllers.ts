@@ -346,16 +346,6 @@ const ChangePasswordController = async (req: Request, res: Response) => {
   }
 };
 
-// Need to add Forget Password with otp.
-// Need 2 Controllers:
-// 1. to take user email ->
-// check if it exists in db
-// if yes generate an otp hash it save it to db and sent to user email.
-// 2. User will send the otp to onother endpoint
-// match it with the otp stored for user and verify it use bcrypt.compare()
-// Also take new password as input and set the new password as password for user after otp verification
-// Delete the otp row from table. cm2brzj4i000225mnpt33f1lv
-
 const ForgotPasswordController = async (req: Request, res: Response) => {
   const prisma = new PrismaClient();
   try {
