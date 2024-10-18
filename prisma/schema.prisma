@@ -7,223 +7,196 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Customer {
-  id                String            @id @default(cuid())
-  name              String
-  email             String            @unique
-  phone             String
-  user              User              @relation(fields: [userId], references: [id])
-  userId            String
-  invoices          Invoice[] // One customer can have many invoices
-  addresses         Address[] // One customer may have multiple addresses
-  shippingAddresses ShippingAddress[]
-  quote             Quote[]
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-}
-
-model Address {
-  id               String   @id @default(cuid())
-  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  customerId       String
-  address_1        String
-  address_2        String?
-  city             String
-  state            String
-  country          String
-  postcode         String
-  isDefaultAddress Boolean
-}
-
-model ShippingAddress {
-  id         String    @id @default(cuid())
-  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  customerId String
-  address_1  String
-  address_2  String?
-  city       String
-  state      String
-  country    String
-  postcode   String
-  phone      String
-  invoice    Invoice[]
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-}
-
-model Invoice {
-  id                String             @id @default(cuid())
-  invoiceNumber     String             @unique
-  customer          Customer           @relation(fields: [customerId], references: [id])
-  customerId        String
-  customEmail       String?
-  invoiceDate       DateTime
-  invoiceDueDate    DateTime
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  isDeleted         Boolean            @default(false)
-  deletedAt         DateTime?
-  status            InvoiceStatus
-  notes             String?
-  invoiceType       String?
-  shippingAddress   ShippingAddress?   @relation(fields: [shippingAddressId], references: [id])
-  shippingAddressId String?
-  invoiceItems      InvoiceItem[]
-  invoiceCharges    InvoiceCharges?
-  gstDetails        InvoiceGstDetails?
-}
-
-model InvoiceCharges {
-  id        String  @id @default(cuid())
-  subtotal  Int
-  shipping  Int
-  discount  Int?
-  total     Int
-  invoice   Invoice @relation(fields: [invoiceId], references: [id])
-  invoiceId String  @unique
-}
-
-model InvoiceGstDetails {
-  id        String  @id @default(cuid())
-  invoice   Invoice @relation(fields: [invoiceId], references: [id])
-  invoiceId String  @unique
-  cgst      Int     @default(0)
-  sgst      Int     @default(0)
-  igst      Int     @default(0)
-  gstType   GstType
-}
-
-model InvoiceItem {
-  id         String          @id @default(cuid())
-  invoice    Invoice         @relation(fields: [invoiceId], references: [id])
-  invoiceId  String
-  product    String
-  hsnSacCode String?
-  qty        Int
-  price      Int
-  discount   Int?
-  subtotal   Int
-  gstDetails ItemGstDetails?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-}
-
-model ItemGstDetails {
-  id            String      @id @default(cuid())
-  invoiceItem   InvoiceItem @relation(fields: [invoiceItemId], references: [id])
-  invoiceItemId String      @unique
-  cgst          Int         @default(0)
-  sgst          Int         @default(0)
-  igst          Int         @default(0)
-}
-
-model Quote {
-  id           String           @id @unique @default(cuid())
-  quoteNumber  String           @unique
-  customer     Customer         @relation(fields: [customerId], references: [id])
-  customerId   String
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  status       QuoteStatus
-  paymentTerms String?
-  deliverables String?
-  termsOfSale  String?
-  quoteItems   QuoteItem[]
-  charges      QuoteCharges?
-  gstDetails   QuoteGstDetails?
-}
-
-model QuoteItem {
-  id       String @id @default(cuid())
-  quote    Quote  @relation(fields: [quoteId], references: [id])
-  quoteId  String @unique
-  product  String
-  qty      Int
-  price    Int
-  subtotal Int
-}
-
-model QuoteCharges {
-  id       String @id @default(cuid())
-  quote    Quote  @relation(fields: [quoteId], references: [id])
-  quoteId  String @unique
-  subtotal Int
-  discount Int?
-  total    Int
-}
-
-model QuoteGstDetails {
-  id      String  @id @default(cuid())
-  quote   Quote   @relation(fields: [quoteId], references: [id])
-  quoteId String  @unique
-  cgst    Int     @default(0)
-  sgst    Int     @default(0)
-  igst    Int     @default(0)
-  gstType GstType
-}
-
-model Product {
-  id           String   @id @default(cuid())
-  productName  String
-  productDesc  String?
-  productPrice Int
-  gstRate      GstRate  @relation(fields: [gstRateId], references: [id])
-  gstRateId    String
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model GstRate {
-  id          String    @id @default(cuid())
-  hsnSacCode  String?
-  description String?
-  gstRate     Int
-  cgstRate    Int
-  sgstRate    Int
-  igstRate    Int
-  products    Product[]
-}
-
 model User {
-  id                    String     @id @default(cuid())
-  orgName               String
-  username              String     @unique
-  email                 String     @unique
-  gstNumber             String     @unique
-  phone                 String?
+  id                    String    @id @default(cuid())
+  userName              String
+  email                 String    @unique
   password              String
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime?   @updatedAt
-  customers             Customer[]
-  refreshToken          String?     @unique
+  companyName           String?
+  companyLogo           String?   @map("company_logo") @db.VarChar(255)
+  companyPhone          String    @unique
+  companyStamp          String?   @map("company_stamp") @db.VarChar(255)
+  companyAuthorizedSign String?   @map("company_authorized_sign") @db.VarChar(255)
+  refreshToken          String?   @unique
   refreshTokenExpiresAt DateTime?
-  products               Product[]
-  otps                   Otp[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime? @updatedAt
+  street                String?
+  city                  String?
+  state                 String?
+  country               String?
+  postCode              String?
+  panNumber             String?
+  gstinNumber           String?
+  msmeNumber            String?
+  bankName              String?
+  bankAccountNumber     String?
+  bankBranchName        String?
+  ifscCode              String?
+
+  products Product[]
+  otps     Otp[]
+  clients  Clients[]
+
+  @@map("users") // Optional: Rename table in the DB
 }
 
 model Otp {
   id        String    @id @default(cuid())
-  otp       String   @unique
-  user      User      @relation(fields: [userId], references: [id])
-  userId    String
+  otp       String    @unique
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
 }
 
-enum GstType {
-  INTRASTATE
-  INTERSTATE
+model Clients {
+  id                String    @id @default(cuid())
+  firstName         String
+  lastName          String
+  email             String
+  phoneNo           String
+  panNo             String?
+  companyName       String?
+  clientGstinNumber String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  addresses         Address[]
+  invoices          Invoice[]
+  quote             Quote[]
+}
+
+model Address {
+  id             String    @id @default(cuid())
+  street         String
+  city           String
+  state          String
+  country        String
+  postCode       String
+  customerId     String
+  customer       Clients   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoiceAddress Invoice[]
+  quoteAddress   Quote[]
+}
+
+model Taxes {
+  id           String         @id @default(cuid())
+  name         String
+  hsnSacCode   String?
+  description  String?
+  gst          Int
+  cgst         Int?           @default(0)
+  sgst         Int?           @default(0)
+  igst         Int?           @default(0)
+  products     Product[]
+  invoiceItems InvoiceItems[]
+  quoteItems   QuoteItems[]
+}
+
+model Product {
+  id                 String  @id @default(cuid())
+  productName        String
+  productDescription String?
+  hsnCode            String?
+  price              Int
+  userId             String
+  user               User    @relation(fields: [userId], references: [id])
+  taxId              String
+  tax                Taxes   @relation(fields: [taxId], references: [id])
+}
+
+model Invoice {
+  id                String         @id @default(cuid())
+  invoiceNumber     String         @unique
+  invoiceDate       DateTime
+  invoiceDueDate    DateTime
+  status            InvoiceStatus
+  subTotal          Int
+  discount          Int
+  totalTax          Int
+  notes             String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  isDeleted         Boolean        @default(false)
+  deletedAt         DateTime?
+  invoiceItems      InvoiceItems[]
+  clientId          String
+  client            Clients        @relation(fields: [clientId], references: [id])
+  shippingAddressId String?
+  shippingAddress   Address?       @relation(fields: [shippingAddressId], references: [id])
+  quoteId           String?        @unique
+  quote             Quote?         @relation(fields: [quoteId], references: [id])
+}
+
+model InvoiceItems {
+  id                 String  @id @default(cuid())
+  productName        String
+  productDescription String?
+  hsnCode            String?
+  price              Int
+  taxId              String
+  tax                Taxes   @relation(fields: [taxId], references: [id])
+  invoiceId          String
+  invoice            Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model Quote {
+  id                String       @id @default(cuid())
+  quoteNumber       String       @unique
+  quoteDate         DateTime
+  quoteDueDate      DateTime
+  status            QuoteStatus
+  subTotal          Int
+  discount          Int
+  totalTax          Int
+  notes             String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  isDeleted         Boolean      @default(false)
+  deletedAt         DateTime?
+  quoteItems        QuoteItems[]
+  clientId          String
+  client            Clients      @relation(fields: [clientId], references: [id])
+  shippingAddressId String?
+  shippingAddress   Address?     @relation(fields: [shippingAddressId], references: [id])
+  invoiceId         String?
+  invoice           Invoice?
+}
+
+model QuoteItems {
+  id                 String  @id @default(cuid())
+  productName        String
+  productDescription String?
+  hsnCode            String?
+  price              Int
+  taxId              String
+  tax                Taxes   @relation(fields: [taxId], references: [id])
+  quoteId            String
+  quote              Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+}
+
+model PurchaseInvoice {
+  id              String   @id @default(cuid())
+  productName     String
+  sellerName      String
+  invoiceNumber   String
+  priceOfEachItem Int
+  totalCost       Int
+  purchaseDate    DateTime
+  quantity        Int
 }
 
 enum InvoiceStatus {
   PAID
+  PARTIALLY_PAID
   PENDING
 }
 
 enum QuoteStatus {
-  PENDING
-  APPROVED
-  REJECTED
+  ACCEPTED
+  DECLINED
+  DRAFT
+  CONVERTED_TO_INVOICE
 }

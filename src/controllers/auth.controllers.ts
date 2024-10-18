@@ -63,12 +63,12 @@ const RegisterController = async (req: Request, res: Response) => {
     const hashPassword = await bcrypt.hash(req.body.password, 11);
     const newUser = await prisma.user.create({
       data: {
-        orgName: req.body.orgName,
-        username: req.body.username,
+        companyName: req.body.orgName,
+        userName: req.body.username,
         email: req.body.email,
         password: hashPassword,
-        gstNumber: req.body.gstNumber,
-        phone: req.body.phone,
+        gstinNumber: req.body.gstNumber,
+        companyPhone: req.body.phone,
         createdAt: new Date(),
       },
     });
@@ -248,11 +248,11 @@ const RefreshController = async (req: Request, res: Response) => {
       },
       select: {
         id: true, // Include required fields explicitly
-        orgName: true,
-        username: true,
+        userName: true,
         email: true,
-        phone: true,
+        companyPhone: true,
         refreshToken: true,
+        companyName: true,
       },
     });
 
@@ -363,7 +363,7 @@ const ForgotPasswordController = async (req: Request, res: Response) => {
       select: {
         id: true,
         email: true,
-        phone: true,
+        companyPhone: true,
       },
     });
     if (!user) {
@@ -475,5 +475,5 @@ export {
   RefreshController,
   ChangePasswordController,
   ForgotPasswordController,
-  VerifyForgotPasswordController
+  VerifyForgotPasswordController,
 };
