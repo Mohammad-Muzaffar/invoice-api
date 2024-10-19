@@ -261,7 +261,7 @@ const GetAllCustomers = async (req: Request, res: Response) => {
 
     const result = clients.map((client) => ({
       ...client,
-      numberOfInvoices: client.invoices.length,
+      invoices: client.invoices.length,
     }));
 
     res.status(200).json({
