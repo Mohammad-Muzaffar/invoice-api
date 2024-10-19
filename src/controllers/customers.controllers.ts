@@ -14,15 +14,16 @@ const AddCustomerController = async (req: Request, res: Response) => {
       throw new ApiError(403, "Zod validation failed.", [error]);
     }
 
-    const customerExists = await prisma.customer.findFirst({
+    const customerExists = await prisma.clients.findFirst({
       where: {
         email: req.body.email,
       },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         email: true,
-        phone: true,
+        phoneNo: true,
       },
     });
     if (customerExists) {
@@ -31,11 +32,12 @@ const AddCustomerController = async (req: Request, res: Response) => {
       ]);
     }
 
-    const customer = await prisma.customer.create({
+    const customer = await prisma.clients.create({
       data: {
-        name: req.body.name,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
         email: req.body.email,
-        phone: req.body.phone,
+        phoneNo: req.body.phoneNo,
         createdAt: new Date(),
         userId: req.body.userDetails.id,
       },
@@ -49,11 +51,11 @@ const AddCustomerController = async (req: Request, res: Response) => {
     res.status(200).json({
       status: "Success",
       id: customer.id,
-      name: customer.name,
+      name: customer.firstName + " " + customer.lastName,
       createdAt: customer.createdAt,
     });
   } catch (error: any) {
-    res.status(error.statusCode).json(error);
+    res.status(error.statusCode || 500).json(error);
   } finally {
     await prisma.$disconnect();
   }
@@ -71,15 +73,9 @@ const UpdateCustomerController = async (req: Request, res: Response) => {
       ]);
     }
 
-    const customerExists = await prisma.customer.findFirst({
+    const customerExists = await prisma.clients.findFirst({
       where: {
         id: id,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
       },
     });
     if (!customerExists) {
@@ -88,14 +84,19 @@ const UpdateCustomerController = async (req: Request, res: Response) => {
       ]);
     }
 
-    const customer = await prisma.customer.update({
+    const customer = await prisma.clients.update({
       where: {
         id: customerExists.id,
       },
       data: {
-        name: req.body.name || customerExists.name,
+        firstName: req.body.firstName || customerExists.firstName,
+        lastName: req.body.lastName || customerExists.lastName,
         email: req.body.email || customerExists.email,
-        phone: req.body.phone || customerExists.phone,
+        phoneNo: req.body.phoneNo || customerExists.phoneNo,
+        panNo: req.body.panNo || customerExists?.panNo,
+        companyName: req.body.companyName || customerExists.companyName,
+        clientGstinNumber:
+          req.body.clientGstinNumber || customerExists.clientGstinNumber,
         updatedAt: new Date(),
       },
     });
@@ -109,11 +110,11 @@ const UpdateCustomerController = async (req: Request, res: Response) => {
       status: "Success",
       message: "Customer details updated successfull.",
       id: customer.id,
-      name: customer.name,
+      name: customer.firstName + customer.lastName,
       updatedAt: customer.updatedAt,
     });
   } catch (error: any) {
-    res.status(error.statusCode).json(error);
+    res.status(error.statusCode || 500).json(error);
   } finally {
     await prisma.$disconnect();
   }
@@ -127,15 +128,15 @@ const DeleteCustomerController = async (req: Request, res: Response) => {
       throw new ApiError(400, "", ["Customer's id not provided."]);
     }
 
-    const customerExists = await prisma.customer.findFirst({
+    const customerExists = await prisma.clients.findFirst({
       where: {
         id: id,
       },
       select: {
         id: true,
-        name: true,
+        firstName: true,
         email: true,
-        phone: true,
+        phoneNo: true,
       },
     });
     if (!customerExists) {
@@ -144,13 +145,14 @@ const DeleteCustomerController = async (req: Request, res: Response) => {
       ]);
     }
 
-    const deletedCustomer = await prisma.customer.delete({
+    const deletedCustomer = await prisma.clients.delete({
       where: {
         id: customerExists.id,
       },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
       },
     });
     if (!deletedCustomer) {
@@ -161,11 +163,13 @@ const DeleteCustomerController = async (req: Request, res: Response) => {
 
     res.status(204).json({
       status: "Success",
-      message: `Customer: ${deletedCustomer.name} have been deleted.`,
+      message: `Customer: ${
+        deletedCustomer.firstName + " " + deletedCustomer.lastName
+      } have been deleted.`,
       id: deletedCustomer.id,
     });
   } catch (error: any) {
-    res.status(error.statusCode).json(error);
+    res.status(error.statusCode || 500).json(error);
   } finally {
     await prisma.$disconnect();
   }
@@ -179,15 +183,17 @@ const GetSingleCustomerController = async (req: Request, res: Response) => {
       throw new ApiError(400, "", ["Customer's id not provided."]);
     }
 
-    const customer = await prisma.customer.findFirst({
+    const customer = await prisma.clients.findFirst({
       where: {
         id: id,
+        userId: req.body.userDetails.id,
       },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         email: true,
-        phone: true,
+        phoneNo: true,
         invoices: true,
         quote: true,
         addresses: true,
@@ -204,17 +210,79 @@ const GetSingleCustomerController = async (req: Request, res: Response) => {
       result: customer,
     });
   } catch (error: any) {
-    res.status(error.statusCode).json(error);
+    res.status(error.statusCode || 500).json(error);
   } finally {
     await prisma.$disconnect();
   }
-}; // Need to add pagination to invoices, addresses under customer.
+};
 
-// Need to add get all Customers with pagination.
+
+const GetAllCustomers = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+  try {
+    const { page, limit } = req.params;
+    const pageNumber = Number(page) || 1;
+    const limitNumber = Number(limit) || 10;
+    const skip = pageNumber === 1 ? 0 : (pageNumber - 1) * limitNumber;
+
+    const totalEntries = await prisma.clients.count({
+      where: {
+        userId: req.body.userDetails.id,
+      },
+    });
+    const totalPages = Math.ceil(totalEntries / limitNumber);
+
+    const clients = await prisma.clients.findMany({
+      where: {
+        userId: req.body.userDetails.id,
+      },
+      skip: skip,
+      take: limitNumber,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        panNo: true,
+        phoneNo: true,
+        companyName: true,
+        invoices: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+    if (!clients) {
+      throw new ApiError(500, "", [
+        "Something went wrong while fetching clients.",
+      ]);
+    }
+
+    const result = clients.map((client) => ({
+      ...client,
+      invoices: client.invoices.length,
+    }));
+
+    res.status(200).json({
+      status: "Success",
+      result,
+      page: pageNumber,
+      limit: limitNumber,
+      totalClients: totalEntries,
+      totalPages: totalPages,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json(error);
+  } finally {
+    await prisma.$disconnect();
+  }
+};
 
 export {
   AddCustomerController,
   UpdateCustomerController,
   DeleteCustomerController,
   GetSingleCustomerController,
+  GetAllCustomers,
 };
