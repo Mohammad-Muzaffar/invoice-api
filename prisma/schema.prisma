@@ -37,6 +37,7 @@ model User {
   products Product[]
   otps     Otp[]
   clients  Clients[]
+  taxes    Taxes[]
 
   @@map("users") // Optional: Rename table in the DB
 }
@@ -90,6 +91,8 @@ model Taxes {
   cgst         Int?           @default(0)
   sgst         Int?           @default(0)
   igst         Int?           @default(0)
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
   products     Product[]
   invoiceItems InvoiceItems[]
   quoteItems   QuoteItems[]
