@@ -32,10 +32,10 @@ const AuthMiddleware = async (
       },
       select: {
         id: true, // Include required fields explicitly
-        orgName: true,
-        username: true,
+        companyName: true,
+        userName: true,
         email: true,
-        phone: true,
+        companyPhone: true,
       },
     });
 

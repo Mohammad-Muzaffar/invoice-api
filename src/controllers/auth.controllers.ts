@@ -63,12 +63,10 @@ const RegisterController = async (req: Request, res: Response) => {
     const hashPassword = await bcrypt.hash(req.body.password, 11);
     const newUser = await prisma.user.create({
       data: {
-        companyName: req.body.orgName,
-        userName: req.body.username,
+        userName: req.body.userName,
         email: req.body.email,
         password: hashPassword,
-        gstinNumber: req.body.gstNumber,
-        companyPhone: req.body.phone,
+        companyPhone: req.body.companyPhone,
         createdAt: new Date(),
       },
     });
