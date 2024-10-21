@@ -151,10 +151,44 @@ const DeleteTaxesController = async (req: Request, res: Response) => {
         id: id,
         userId: req.body.userDetails.id,
       },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        products: {
+          select: {
+            id: true,
+          },
+        },
+        invoiceItems: {
+          select: {
+            id: true,
+          },
+        },
+        quoteItems: {
+          select: {
+            id: true,
+          },
+        },
+      },
     });
     if (!taxExists) {
       throw new ApiError(404, "Tax Not Found!", [
         "Tax not found or not authorized.",
+      ]);
+    }
+
+    if (taxExists.products.length > 0) {
+      throw new ApiError(403, "Cannot Delete!", [
+        "Cannot delete the tax there are products dependent on it, first need to update the products!",
+      ]);
+    } else if (taxExists.invoiceItems.length > 0) {
+      throw new ApiError(403, "Cannot Delete!", [
+        "Cannot delete the tax there are invoiceItems dependent on it, first need to update the invoices!",
+      ]);
+    } else if (taxExists.quoteItems.length > 0) {
+      throw new ApiError(403, "Cannot Delete!", [
+        "Cannot delete the tax there are quoteItems dependent on it, first need to update the quotes!",
       ]);
     }
 
@@ -186,7 +220,7 @@ const DeleteTaxesController = async (req: Request, res: Response) => {
 const GetAllTaxesController = async (req: Request, res: Response) => {
   const prisma = new PrismaClient();
   try {
-    const { page, limit } = req.params;
+    const { page, limit } = req.query;
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 10;
     const skip = pageNumber === 1 ? 0 : (pageNumber - 1) * limitNumber;
@@ -248,6 +282,7 @@ const GetAllTaxesController = async (req: Request, res: Response) => {
       result,
       page: pageNumber,
       limit: limitNumber,
+      perPage: result.length,
       totalTaxes: totalEntries,
       totalPages: totalPages,
     });
