@@ -7,8 +7,11 @@ import {
   GetSingleCustomerController,
   UpdateCustomerController,
 } from "../controllers/customers.controllers";
+import addressRouter from "./address.routes";
 
 const router = express.Router();
+
+router.use("/address/", addressRouter);
 
 router.route("/").post(AuthMiddleware, AddCustomerController);
 router.route("/:id").put(AuthMiddleware, UpdateCustomerController);

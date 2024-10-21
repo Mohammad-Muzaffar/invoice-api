@@ -76,8 +76,8 @@ model Address {
   state          String
   country        String
   postCode       String
-  customerId     String
-  customer       Clients   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  clientId       String
+  clients        Clients   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   invoiceAddress Invoice[]
   quoteAddress   Quote[]
 }
@@ -91,8 +91,8 @@ model Taxes {
   cgst         Int?           @default(0)
   sgst         Int?           @default(0)
   igst         Int?           @default(0)
-  userId            String
-  user              User      @relation(fields: [userId], references: [id])
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
   products     Product[]
   invoiceItems InvoiceItems[]
   quoteItems   QuoteItems[]

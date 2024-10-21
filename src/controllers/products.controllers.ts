@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import e, { Request, Response } from "express";
+import { Request, Response } from "express";
 import { ApiError } from "../utils/apiError";
 import { AddProductSchema, UpdateProductsSchema } from "../config/products.zod";
 
