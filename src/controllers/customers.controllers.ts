@@ -216,7 +216,6 @@ const GetSingleCustomerController = async (req: Request, res: Response) => {
   }
 };
 
-
 const GetAllCustomers = async (req: Request, res: Response) => {
   const prisma = new PrismaClient();
   try {
@@ -251,6 +250,11 @@ const GetAllCustomers = async (req: Request, res: Response) => {
             id: true,
           },
         },
+        quote: {
+          select: {
+            id: true,
+          },
+        },
       },
     });
     if (!clients) {
@@ -262,6 +266,7 @@ const GetAllCustomers = async (req: Request, res: Response) => {
     const result = clients.map((client) => ({
       ...client,
       invoices: client.invoices.length,
+      quote: client.quote.length,
     }));
 
     res.status(200).json({
