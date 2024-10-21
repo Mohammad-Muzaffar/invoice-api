@@ -220,7 +220,7 @@ const GetSingleCustomerController = async (req: Request, res: Response) => {
 const GetAllCustomers = async (req: Request, res: Response) => {
   const prisma = new PrismaClient();
   try {
-    const { page, limit } = req.params;
+    const { page, limit } = req.query;
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 10;
     const skip = pageNumber === 1 ? 0 : (pageNumber - 1) * limitNumber;
@@ -269,6 +269,7 @@ const GetAllCustomers = async (req: Request, res: Response) => {
       result,
       page: pageNumber,
       limit: limitNumber,
+      perPage: result.length,
       totalClients: totalEntries,
       totalPages: totalPages,
     });
