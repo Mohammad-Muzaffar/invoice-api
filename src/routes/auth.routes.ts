@@ -8,8 +8,8 @@ import {
   RefreshController,
   RegisterController,
   VerifyForgotPasswordController,
-} from "../../controllers/auth.controllers";
-import { AuthMiddleware } from "../../middlewares/auth.middleware";
+} from "../controllers/auth.controllers";
+import { AuthMiddleware } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
