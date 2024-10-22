@@ -99,15 +99,17 @@ model Taxes {
 }
 
 model Product {
-  id                 String  @id @default(cuid())
+  id                 String         @id @default(cuid())
   productName        String
   productDescription String?
   hsnCode            String?
   price              Int
   userId             String
-  user               User    @relation(fields: [userId], references: [id])
+  user               User           @relation(fields: [userId], references: [id])
   taxId              String
-  tax                Taxes   @relation(fields: [taxId], references: [id])
+  tax                Taxes          @relation(fields: [taxId], references: [id])
+  invoiceItems       InvoiceItems[]
+  quoteItems         QuoteItems[]
 }
 
 model Invoice {
@@ -116,10 +118,15 @@ model Invoice {
   invoiceDate       DateTime
   invoiceDueDate    DateTime
   status            InvoiceStatus
-  subTotal          Int
-  discount          Int
-  totalTax          Int
-  notes             String
+  totalWithoutTax   Int
+  subTotal          Int?
+  discount          Int?           @default(0)
+  totalTax          Int?
+  gst               Int?
+  cgst              Int?
+  sgst              Int?
+  igst              Int?
+  notes             String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   isDeleted         Boolean        @default(false)
@@ -139,8 +146,13 @@ model InvoiceItems {
   productDescription String?
   hsnCode            String?
   price              Int
+  quantity           Int     @default(1)
+  totalPrice         Int
+  taxableAmount      Int
   taxId              String
   tax                Taxes   @relation(fields: [taxId], references: [id])
+  productId          String
+  product            Product @relation(fields: [productId], references: [id])
   invoiceId          String
   invoice            Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
@@ -151,9 +163,14 @@ model Quote {
   quoteDate         DateTime
   quoteDueDate      DateTime
   status            QuoteStatus
-  subTotal          Int
-  discount          Int
-  totalTax          Int
+  totalWithoutTax   Int
+  subTotal          Int?
+  discount          Int?         @default(0)
+  totalTax          Int?
+  gst               Int?
+  cgst              Int?
+  sgst              Int?
+  igst              Int?
   notes             String
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
@@ -174,8 +191,13 @@ model QuoteItems {
   productDescription String?
   hsnCode            String?
   price              Int
+  quantity           Int     @default(1)
+  totalPrice         Int
+  taxableAmount      Int
   taxId              String
   tax                Taxes   @relation(fields: [taxId], references: [id])
+  productId          String
+  product            Product @relation(fields: [productId], references: [id])
   quoteId            String
   quote              Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 }
