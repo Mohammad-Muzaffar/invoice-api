@@ -8,12 +8,7 @@ dotenv.config({ path: "/home/am-pc-02/invoice-api/.env" }); //Path should be cha
 const port = process.env.PORT || 3000;
 const app = express();
 
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN,
-    credentials: true,
-  })
-);
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api/", mainRouter);
