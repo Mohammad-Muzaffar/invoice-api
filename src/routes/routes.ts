@@ -5,7 +5,7 @@ import customersRouter from "./customers.routes";
 import taxesRouter from "./taxes.routes";
 import productsRouter from "./products.routes";
 import invoiceRouter from "./invoices.routes";
-import quoteRouter from "./quote.routes";
+import quoteRouter from "./quotes.routes";
 
 const router = express.Router();
 
