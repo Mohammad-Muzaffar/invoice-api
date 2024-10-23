@@ -119,9 +119,9 @@ model Invoice {
   invoiceDueDate    DateTime
   status            InvoiceStatus
   totalWithoutTax   Int
-  subTotal          Int?
-  discount          Int?           @default(0)
-  totalTax          Int?
+  subTotal          Int
+  discount          Int           @default(0)
+  totalTax          Int
   gst               Int?
   cgst              Int?
   sgst              Int?
@@ -164,9 +164,9 @@ model Quote {
   quoteDueDate      DateTime
   status            QuoteStatus
   totalWithoutTax   Int
-  subTotal          Int?
-  discount          Int?         @default(0)
-  totalTax          Int?
+  subTotal          Int
+  discount          Int         @default(0)
+  totalTax          Int
   gst               Int?
   cgst              Int?
   sgst              Int?

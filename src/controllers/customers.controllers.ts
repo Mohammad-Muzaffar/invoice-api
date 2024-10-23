@@ -8,54 +8,76 @@ import { ApiError } from "../utils/apiError";
 
 const AddCustomerController = async (req: Request, res: Response) => {
   const prisma = new PrismaClient();
+
   try {
+    // Validate incoming data
     const { success, error } = AddCustomerSchema.safeParse(req.body);
     if (!success) {
-      throw new ApiError(403, "Zod validation failed.", [error]);
+      throw new ApiError(400, "Zod validation failed.", [error]);
     }
 
-    const customerExists = await prisma.clients.findFirst({
-      where: {
-        email: req.body.email,
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        phoneNo: true,
-      },
+    const {
+      email,
+      firstName,
+      lastName,
+      phoneNo,
+      panNo,
+      companyName,
+      clientGstinNumber,
+      addresses,
+      userDetails,
+    } = req.body;
+
+    // Check if the client already exists
+    const clientExists = await prisma.clients.findFirst({
+      where: { email },
+      select: { id: true, email: true },
     });
-    if (customerExists) {
+
+    if (clientExists) {
       throw new ApiError(400, "Customer already exists!", [
-        "Customer already exists!",
+        `Customer with email ${clientExists.email} already exists!`,
       ]);
     }
 
-    const customer = await prisma.clients.create({
-      data: {
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        email: req.body.email,
-        phoneNo: req.body.phoneNo,
-        createdAt: new Date(),
-        userId: req.body.userDetails.id,
-      },
+    // Create a new client and associated addresses in a transaction
+    const newClient = await prisma.$transaction(async (prisma) => {
+      const createdClient = await prisma.clients.create({
+        data: {
+          firstName,
+          lastName,
+          email,
+          phoneNo,
+          panNo: panNo || null,
+          companyName: companyName || null,
+          clientGstinNumber: clientGstinNumber || null,
+          createdAt: new Date(),
+          userId: userDetails.id,
+        },
+      });
+
+      if (addresses && addresses.length > 0) {
+        const addressData = addresses.map((item: any) => ({
+          ...item,
+          clientId: createdClient.id,
+        }));
+
+        await prisma.address.createMany({ data: addressData });
+      }
+
+      return createdClient;
     });
-    if (!customer) {
-      throw new ApiError(500, "Something went wrong!", [
-        "Something went wrong while creating customer!",
-      ]);
-    }
 
-    res.status(200).json({
+    res.status(201).json({
       status: "Success",
-      id: customer.id,
-      name: customer.firstName + " " + customer.lastName,
-      createdAt: customer.createdAt,
+      id: newClient.id,
+      clientName: `${newClient.firstName} ${newClient.lastName}`,
     });
   } catch (error: any) {
-    res.status(error.statusCode || 500).json(error);
+    res.status(error.statusCode || 500).json({
+      status: "Error",
+      message: error.message || "Something went wrong.",
+    });
   } finally {
     await prisma.$disconnect();
   }
@@ -285,10 +307,47 @@ const GetAllCustomers = async (req: Request, res: Response) => {
   }
 };
 
+const GetAllCustomersByIDController = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+  try {
+    const clients = await prisma.clients.findMany({
+      where: {
+        userId: req.body.userDetails.id,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        companyName: true
+      },
+    });
+    if (!clients) {
+      throw new ApiError(500, "Something went wrong!", [
+        "Something went wrong while fetching clients.",
+      ]);
+    }
+
+    const allClients = clients.map(client => ({
+      ...client,
+      clientName: `${client.firstName} ${client.lastName}`
+    }));
+
+    res.status(200).json({
+      status: "Success",
+      clients: allClients,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json(error);
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
 export {
   AddCustomerController,
   UpdateCustomerController,
   DeleteCustomerController,
   GetSingleCustomerController,
   GetAllCustomers,
+  GetAllCustomersByIDController,
 };

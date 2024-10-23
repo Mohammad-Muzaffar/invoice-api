@@ -12,23 +12,23 @@ const AddInvoicesController = async (req: Request, res: Response) => {
       throw new ApiError(400, "Zod validation error!", [error]);
     }
 
-    const { 
-      invoiceNumber, 
-      invoiceDate, 
-      invoiceDueDate, 
-      status, 
-      totalWithoutTax, 
-      subTotal, 
-      discount, 
-      totalTax, 
-      notes, 
-      gst, 
-      cgst, 
-      sgst, 
-      igst, 
+    const {
+      invoiceNumber,
+      invoiceDate,
+      invoiceDueDate,
+      status,
+      totalWithoutTax,
+      subTotal,
+      discount,
+      totalTax,
+      notes,
+      gst,
+      cgst,
+      sgst,
+      igst,
       clientId,
       shippingAddressId,
-      invoiceItems 
+      invoiceItems,
     } = req.body;
 
     // Check if the invoice already exists
@@ -92,12 +92,13 @@ const AddInvoicesController = async (req: Request, res: Response) => {
   } finally {
     await prisma.$disconnect();
   }
-}
+};
 
 const UpdateInvoiceController = async (req: Request, res: Response) => {
   const prisma = new PrismaClient();
 
   try {
+    // Validate incoming data
     const { success, error } = UpdateInvoiceSchema.safeParse(req.body);
     if (!success) {
       throw new ApiError(400, "Zod validation error!", [error]);
@@ -114,72 +115,75 @@ const UpdateInvoiceController = async (req: Request, res: Response) => {
       ]);
     }
 
+    // Prepare data for update
+    const {
+      invoiceNumber,
+      invoiceDate,
+      invoiceDueDate,
+      status,
+      totalWithoutTax,
+      subTotal,
+      discount,
+      totalTax,
+      notes,
+      gst,
+      cgst,
+      sgst,
+      igst,
+      shippingAddressId,
+      invoiceItems,
+    } = req.body;
+
     const updatedInvoice = await prisma.$transaction(async (prisma) => {
-      const invoice = await prisma.invoice.update({
-        where: {
-          id: invoiceId,
-        },
-        data: {
-          invoiceNumber:
-            req.body.invoiceNumber || existingInvoice.invoiceNumber,
-          invoiceDate: req.body.invoiceDate || existingInvoice.invoiceDate,
-          invoiceDueDate:
-            req.body.invoiceDueDate || existingInvoice.invoiceDueDate,
-          status: req.body.status || existingInvoice.status,
-          totalWithoutTax:
-            req.body.totalWithoutTax * 100 || existingInvoice.totalWithoutTax,
-          subTotal: req.body.subTotal * 100 || existingInvoice.subTotal,
-          discount: req.body.discount * 100 || existingInvoice.discount,
-          totalTax: req.body.totalTax * 100 || existingInvoice.totalTax,
-          notes: req.body.notes || existingInvoice.notes,
-          gst: req.body.gst || existingInvoice.gst,
-          cgst: req.body.cgst || existingInvoice.cgst,
-          sgst: req.body.sgst || existingInvoice.sgst,
-          igst: req.body.igst || existingInvoice.igst,
-          shippingAddressId:
-            req.body.shippingAddressId || existingInvoice.shippingAddressId,
-        },
+      // Update the invoice
+      const updatedData = {
+        invoiceNumber: invoiceNumber || existingInvoice.invoiceNumber,
+        invoiceDate: invoiceDate || existingInvoice.invoiceDate,
+        invoiceDueDate: invoiceDueDate || existingInvoice.invoiceDueDate,
+        status: status || existingInvoice.status,
+        totalWithoutTax: totalWithoutTax
+          ? totalWithoutTax * 100
+          : existingInvoice.totalWithoutTax,
+        subTotal: subTotal ? subTotal * 100 : existingInvoice.subTotal,
+        discount: discount ? discount * 100 : existingInvoice.discount,
+        totalTax: totalTax ? totalTax * 100 : existingInvoice.totalTax,
+        notes: notes || existingInvoice.notes,
+        gst: gst || existingInvoice.gst,
+        cgst: cgst || existingInvoice.cgst,
+        sgst: sgst || existingInvoice.sgst,
+        igst: igst || existingInvoice.igst,
+        shippingAddressId:
+          shippingAddressId || existingInvoice.shippingAddressId,
+      };
+
+      const updatedInvoice = await prisma.invoice.update({
+        where: { id: invoiceId },
+        data: updatedData,
       });
 
-      if (req.body.invoiceItems && req.body.invoiceItems.length > 0) {
+      // Handle invoice items
+      if (invoiceItems && invoiceItems.length > 0) {
         await prisma.invoiceItems.deleteMany({
-          where: {
-            invoiceId: invoiceId,
-          },
+          where: { invoiceId },
         });
 
-        const invoicesItemsArray: {
-          productName: string;
-          productDescription: string;
-          hsnCode: string;
-          price: number;
-          quantity: number;
-          totalPrice: number;
-          taxableAmount: number;
-          taxId: string;
-          productId: string;
-        }[] = req.body.invoiceItems;
-
-        const invoiceItemsData = invoicesItemsArray.map((item) => ({
+        const invoiceItemsData = invoiceItems.map((item: any) => ({
           ...item,
-          invoiceId: invoiceId,
+          invoiceId,
           price: item.price * 100,
           totalPrice: item.totalPrice * 100,
           taxableAmount: item.taxableAmount * 100,
         }));
 
-        const createdInvoiceItems = await prisma.invoiceItems.createMany({
-          data: invoiceItemsData,
-        });
+        await prisma.invoiceItems.createMany({ data: invoiceItemsData });
       }
 
-      const invoiceItems = await prisma.invoiceItems.findMany({
-        where: {
-          invoiceId: invoiceId,
-        },
+      // Fetch updated items
+      const updatedItems = await prisma.invoiceItems.findMany({
+        where: { invoiceId },
       });
 
-      return { invoice, invoiceItems };
+      return { updatedInvoice, updatedItems };
     });
 
     res.status(200).json({
@@ -187,7 +191,10 @@ const UpdateInvoiceController = async (req: Request, res: Response) => {
       updatedInvoice,
     });
   } catch (error: any) {
-    res.status(error.statusCode || 500).json(error);
+    res.status(error.statusCode || 500).json({
+      status: "Error",
+      message: error.message || "Something went wrong.",
+    });
   } finally {
     await prisma.$disconnect();
   }
@@ -208,24 +215,22 @@ const DeleteInvoiceController = async (req: Request, res: Response) => {
       ]);
     }
 
-    const deletedInvoice = await prisma.$transaction(async (prisma) => {
-      const invoice = await prisma.invoice.delete({
-        where: {
-          id: invoiceId,
-        },
+    // Perform deletion in a transaction
+    await prisma.$transaction(async (prisma) => {
+      await prisma.invoice.delete({
+        where: { id: invoiceId },
       });
       await prisma.invoiceItems.deleteMany({
-        where: {
-          invoiceId: invoiceId,
-        },
+        where: { invoiceId },
       });
     });
 
-    res.status(204).json({
-      status: "Success",
-    });
+    res.status(204).send(); // No Content response
   } catch (error: any) {
-    res.status(error.statusCode || 500).json(error);
+    res.status(error.statusCode || 500).json({
+      status: "Error",
+      message: error.message || "Something went wrong.",
+    });
   } finally {
     await prisma.$disconnect();
   }
@@ -234,16 +239,16 @@ const DeleteInvoiceController = async (req: Request, res: Response) => {
 const GetAllInvoiceController = async (req: Request, res: Response) => {
   const prisma = new PrismaClient();
   try {
-    const { 
-      page = 1, 
-      limit = 10, 
-      clientId, 
-      startInvoiceDate, 
-      endInvoiceDate, 
-      startDueDate, 
+    const {
+      page = 1,
+      limit = 10,
+      clientId,
+      startInvoiceDate,
+      endInvoiceDate,
+      startDueDate,
       endDueDate,
       status,
-      clientName // New filter for client name
+      clientName, // New filter for client name
     } = req.query;
 
     const pageNumber = Number(page);
@@ -252,17 +257,17 @@ const GetAllInvoiceController = async (req: Request, res: Response) => {
 
     // Build filter object
     const filters: any = {};
-    
+
     if (clientId) filters.clientId = clientId as string; // Ensure clientId is a string
     if (status) filters.status = status as string;
 
     // Client name filter
-    if (clientName && typeof clientName === 'string') {
+    if (clientName && typeof clientName === "string") {
       filters.client = {
         OR: [
-          { firstName: { contains: clientName, mode: 'insensitive' } },
-          { lastName: { contains: clientName, mode: 'insensitive' } },
-          { companyName: { contains: clientName, mode: 'insensitive' } },
+          { firstName: { contains: clientName, mode: "insensitive" } },
+          { lastName: { contains: clientName, mode: "insensitive" } },
+          { companyName: { contains: clientName, mode: "insensitive" } },
         ],
       };
     }
@@ -270,20 +275,20 @@ const GetAllInvoiceController = async (req: Request, res: Response) => {
     // Date range filters
     if (startInvoiceDate || endInvoiceDate) {
       filters.invoiceDate = {};
-      if (typeof startInvoiceDate === 'string') {
+      if (typeof startInvoiceDate === "string") {
         filters.invoiceDate.gte = new Date(startInvoiceDate);
       }
-      if (typeof endInvoiceDate === 'string') {
+      if (typeof endInvoiceDate === "string") {
         filters.invoiceDate.lte = new Date(endInvoiceDate);
       }
     }
 
     if (startDueDate || endDueDate) {
       filters.invoiceDueDate = {};
-      if (typeof startDueDate === 'string') {
+      if (typeof startDueDate === "string") {
         filters.invoiceDueDate.gte = new Date(startDueDate);
       }
-      if (typeof endDueDate === 'string') {
+      if (typeof endDueDate === "string") {
         filters.invoiceDueDate.lte = new Date(endDueDate);
       }
     }
@@ -332,6 +337,10 @@ const GetAllInvoiceController = async (req: Request, res: Response) => {
     // Map results to include item count
     const result = invoices.map((invoice) => ({
       ...invoice,
+      totalWithoutTax: invoice.totalWithoutTax / 100,
+      subTotal: invoice.subTotal / 100,
+      discount: invoice.discount / 100,
+      totalTax: invoice.totalTax / 100,
       invoiceItemsCount: invoice.invoiceItems.length,
     }));
 
@@ -352,7 +361,7 @@ const GetAllInvoiceController = async (req: Request, res: Response) => {
   } finally {
     await prisma.$disconnect();
   }
-}
+};
 
 const GetSingleInvoiceController = async (req: Request, res: Response) => {
   const prisma = new PrismaClient();
@@ -443,12 +452,30 @@ const GetSingleInvoiceController = async (req: Request, res: Response) => {
 
     // Check if either invoice or user is not found
     if (!invoice || !user) {
-      throw new ApiError(404, "Invoice or User not found.", ["Invoice or User not found."]);
+      throw new ApiError(404, "Invoice or User not found.", [
+        "Invoice or User not found.",
+      ]);
     }
 
+    // Transform the invoice data
+    const updatedInvoice = {
+      ...invoice, // Spread existing invoice properties
+      totalWithoutTax: (invoice.totalWithoutTax / 100),
+      subTotal: (invoice.subTotal / 100),
+      discount: (invoice.discount / 100),
+      totalTax: (invoice.totalTax / 100),
+      invoiceItems: invoice.invoiceItems.map(item => ({
+        ...item, // Spread existing item properties
+        price: (item.price / 100), // Divide price by 100
+        totalPrice: (item.totalPrice / 100), // Divide totalPrice by 100
+        taxableAmount: (item.taxableAmount / 100), // Divide taxableAmount by 100
+      })),
+    };
+
+    // Send response with transformed data
     res.status(200).json({
       status: "Success",
-      result: { invoice, user },
+      result: { invoice: updatedInvoice, user },
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({

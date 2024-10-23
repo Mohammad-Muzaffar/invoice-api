@@ -1,9 +1,9 @@
 import zod from "zod";
 
 const AddQuoteSchema = zod.object({
-  invoiceNumber: zod.string(),
-  invoiceDate: zod.string(),
-  invoiceDueDate: zod.string(),
+  quoteNumber: zod.string(),
+  quoteDate: zod.string(),
+  quoteDueDate: zod.string(),
   status: zod.enum(["ACCEPTED", "DECLINED", "DRAFT", "CONVERTED_TO_INVOICE"]),
   totalWithoutTax: zod.number(),
   subTotal: zod.number(),
@@ -16,7 +16,7 @@ const AddQuoteSchema = zod.object({
   igst: zod.number().optional(),
   clientId: zod.string(),
   shippingAddressId: zod.string(),
-  invoiceItems: zod.array(
+  quoteItems: zod.array(
     zod.object({
       productName: zod.string(),
       productDescription: zod.string().optional(),
@@ -32,9 +32,9 @@ const AddQuoteSchema = zod.object({
 });
 
 const UpdateQuoteSchema = zod.object({
-  invoiceNumber: zod.string().optional(),
-  invoiceDate: zod.string().optional(),
-  invoiceDueDate: zod.string().optional(),
+  quoteNumber: zod.string().optional(),
+  quoteDate: zod.string().optional(),
+  quoteDueDate: zod.string().optional(),
   status: zod
     .enum(["ACCEPTED", "DECLINED", "DRAFT", "CONVERTED_TO_INVOICE"])
     .optional(),
@@ -48,7 +48,7 @@ const UpdateQuoteSchema = zod.object({
   sgst: zod.number().optional(),
   igst: zod.number().optional(),
   shippingAddressId: zod.string().optional(),
-  invoiceItems: zod
+  quoteItems: zod
     .array(
       zod.object({
         productName: zod.string().optional(),

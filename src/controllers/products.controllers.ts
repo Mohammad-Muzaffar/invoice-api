@@ -177,9 +177,14 @@ const GetAllProductsController = async (req: Request, res: Response) => {
       ]);
     }
 
+    const allProducts = products.map((product) => ({
+      ...product,
+      price: product.price / 100,
+    }));
+
     res.status(200).json({
       status: "Success",
-      result: products,
+      result: allProducts,
       page: pageNumber,
       limit: limitNumber,
       perPage: products.length,
@@ -223,9 +228,52 @@ const GetSingleProductsController = async (req: Request, res: Response) => {
       ]);
     }
 
+    const updatedProduct = {
+      ...product,
+      price: product.price / 100,
+    };
+
     res.status(200).json({
       status: "Success",
-      product,
+      product: updatedProduct,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json(error);
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+const GetAllProductsById = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        userId: req.body.userDetails.id,
+      },
+      select: {
+        id: true,
+        productName: true,
+        price: true,
+        hsnCode: true,
+        taxId: true,
+      },
+    });
+
+    if (!products) {
+      throw new ApiError(500, "Something went wrong.", [
+        "Something went wrong while fetching products.",
+      ]);
+    }
+
+    const allProducts = products.map((product) => ({
+      ...product,
+      price: product.price / 100,
+    }));
+
+    res.status(200).json({
+      status: "Success",
+      result: allProducts,
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json(error);
@@ -240,4 +288,5 @@ export {
   DeleteProductsController,
   GetAllProductsController,
   GetSingleProductsController,
+  GetAllProductsById,
 };
