@@ -3,6 +3,7 @@ import { AuthMiddleware } from "../middlewares/auth.middleware";
 import {
   AddProductsController,
   DeleteProductsController,
+  GetAllProductsById,
   GetAllProductsController,
   GetSingleProductsController,
   UpdateProductsController,
@@ -15,5 +16,6 @@ router.route("/").get(AuthMiddleware, GetAllProductsController);
 router.route("/:id").put(AuthMiddleware, UpdateProductsController);
 router.route("/:id").delete(AuthMiddleware, DeleteProductsController);
 router.route("/:id").get(AuthMiddleware, GetSingleProductsController);
+router.route("/fetch/id").get(AuthMiddleware, GetAllProductsById);
 
 export default router;

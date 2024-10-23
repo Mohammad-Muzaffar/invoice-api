@@ -4,6 +4,7 @@ import {
   AddCustomerController,
   DeleteCustomerController,
   GetAllCustomers,
+  GetAllCustomersByIDController,
   GetSingleCustomerController,
   UpdateCustomerController,
 } from "../controllers/customers.controllers";
@@ -17,6 +18,7 @@ router.route("/").post(AuthMiddleware, AddCustomerController);
 router.route("/:id").put(AuthMiddleware, UpdateCustomerController);
 router.route("/:id").delete(AuthMiddleware, DeleteCustomerController);
 router.route("/:id").get(AuthMiddleware, GetSingleCustomerController);
+router.route("/fetch/id").get(AuthMiddleware, GetAllCustomersByIDController);
 router.route("/").get(AuthMiddleware, GetAllCustomers);
 
 export default router;

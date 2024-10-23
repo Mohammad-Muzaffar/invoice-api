@@ -192,9 +192,48 @@ const GetAddressController = async (req: Request, res: Response) => {
   }
 };
 
+const GetAddressByIdController = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+  try {
+    const clientId = req.params.id;
+    const address = await prisma.address.findMany({
+      where: {
+        clientId,
+      },
+      select: {
+        id: true,
+        street: true,
+        city: true,
+        postCode: true,
+      },
+    });
+
+    if (!address) {
+      throw new ApiError(500, "Something went wrong.", [
+        "Something went wrong while fetching address.",
+      ]);
+    }
+
+    const allAddress = address.map((item) => ({
+      id: item.id,
+      address: `${item.street.split(",")[0]}, ${item.city}, ${item.postCode}`,
+    }));
+
+    res.status(200).json({
+      status: "Success",
+      result: allAddress,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json(error);
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
 export {
   AddAddressController,
   UpdateAddressController,
   DeleteAddressController,
   GetAddressController,
+  GetAddressByIdController,
 };

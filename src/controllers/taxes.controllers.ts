@@ -293,9 +293,68 @@ const GetAllTaxesController = async (req: Request, res: Response) => {
   }
 };
 
+const GetAllTaxesByIdController = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+  try {
+    const taxes = await prisma.taxes.findMany({
+      where: {
+        userId: req.body.userDetails.id,
+      },
+      select: {
+        id: true,
+        name: true,
+        gst: true,
+      },
+    });
+
+    if (!taxes) {
+      throw new ApiError(500, "Something went wrong!", [
+        "Something went wrong while fetching taxes.",
+      ]);
+    }
+
+    res.status(200).json({
+      status: "Success",
+      taxes,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json(error);
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+const GetSingleTaxController = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+  try {
+    const { id } = req.params;
+    const tax = await prisma.taxes.findUnique({
+      where: {
+        id,
+        userId: req.body.userDetails.id
+      },
+    });
+
+    if (!tax) {
+      throw new ApiError(404, "Tax not found!", ["Tax not found!"]);
+    }
+
+    res.status(200).json({
+      status: "Success",
+      tax,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json(error);
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
 export {
   AddTaxesController,
   UpdateTaxesController,
   DeleteTaxesController,
   GetAllTaxesController,
+  GetAllTaxesByIdController,
+  GetSingleTaxController,
 };
