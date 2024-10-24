@@ -4,7 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mainRouter from "./routes/routes";
 
-dotenv.config({ path: "/home/am-pc-02/invoice-api/.env" }); //Path should be changed in production.
+dotenv.config({ path: "./.env" });
 const port = process.env.PORT || 3000;
 const app = express();
 

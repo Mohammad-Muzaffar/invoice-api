@@ -6,6 +6,7 @@ import taxesRouter from "./taxes.routes";
 import productsRouter from "./products.routes";
 import invoiceRouter from "./invoices.routes";
 import quoteRouter from "./quotes.routes";
+import purchaseRouter from "./purchase-invoice.routes";
 
 const router = express.Router();
 
@@ -17,5 +18,6 @@ router.use("/taxes/", taxesRouter);
 router.use("/products/", productsRouter);
 router.use("/invoices/", invoiceRouter);
 router.use("/quotes/", quoteRouter);
+router.use("/purchase-invoices/", purchaseRouter);
 
 export default router;

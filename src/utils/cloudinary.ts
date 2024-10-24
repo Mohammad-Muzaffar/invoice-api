@@ -2,7 +2,7 @@ import express from "express";
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import * as dotenv from "dotenv";
-dotenv.config({ path: "/home/am-pc-02/invoice-api/.env" });
+dotenv.config({ path: "./.env" });
 
 export const uploadOnCloudinary = async (
   localFilePath: string,
