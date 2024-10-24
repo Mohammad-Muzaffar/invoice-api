@@ -5,7 +5,7 @@ const AddQuoteSchema = zod.object({
   quoteDate: zod.string(),
   quoteDueDate: zod.string(),
   status: zod.enum(["ACCEPTED", "DECLINED", "DRAFT", "CONVERTED_TO_INVOICE"]),
-  totalWithoutTax: zod.number(),
+  total: zod.number(),
   subTotal: zod.number(),
   discount: zod.number().default(0),
   totalTax: zod.number(),
@@ -38,7 +38,7 @@ const UpdateQuoteSchema = zod.object({
   status: zod
     .enum(["ACCEPTED", "DECLINED", "DRAFT", "CONVERTED_TO_INVOICE"])
     .optional(),
-  totalWithoutTax: zod.number().optional(),
+  total: zod.number().optional(),
   subTotal: zod.number().optional(),
   discount: zod.number().optional().default(0),
   totalTax: zod.number().optional(),
