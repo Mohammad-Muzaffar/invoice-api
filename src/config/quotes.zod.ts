@@ -4,7 +4,7 @@ const AddQuoteSchema = zod.object({
   quoteNumber: zod.string(),
   quoteDate: zod.string(),
   quoteDueDate: zod.string(),
-  status: zod.enum(["ACCEPTED", "DECLINED", "DRAFT", "CONVERTED_TO_INVOICE"]),
+  status: zod.enum(["Accepted", "Declined", "Draft", "Converted_To_Invoice"]),
   total: zod.number(),
   subTotal: zod.number(),
   discount: zod.number().default(0),
@@ -24,6 +24,7 @@ const AddQuoteSchema = zod.object({
       price: zod.number(),
       quantity: zod.number().optional(),
       totalPrice: zod.number(),
+      subTotal: zod.number(),
       taxableAmount: zod.number(),
       taxId: zod.string(),
       productId: zod.string(),
@@ -36,7 +37,7 @@ const UpdateQuoteSchema = zod.object({
   quoteDate: zod.string().optional(),
   quoteDueDate: zod.string().optional(),
   status: zod
-    .enum(["ACCEPTED", "DECLINED", "DRAFT", "CONVERTED_TO_INVOICE"])
+    .enum(["Accepted", "Declined", "Draft", "Converted_To_Invoice"])
     .optional(),
   total: zod.number().optional(),
   subTotal: zod.number().optional(),
@@ -57,6 +58,7 @@ const UpdateQuoteSchema = zod.object({
         price: zod.number().optional(),
         quantity: zod.number().optional(),
         totalPrice: zod.number().optional(),
+        subTotal: zod.number().optional(),
         taxableAmount: zod.number().optional(),
         taxId: zod.string().optional(),
         productId: zod.string().optional(),
