@@ -217,7 +217,7 @@ const GetSingleCustomerController = async (req: Request, res: Response) => {
         email: true,
         phoneNo: true,
         invoices: true,
-        quote: true,
+        quotes: true,
         addresses: true,
       },
     });
@@ -272,7 +272,7 @@ const GetAllCustomers = async (req: Request, res: Response) => {
             id: true,
           },
         },
-        quote: {
+        quotes: {
           select: {
             id: true,
           },
@@ -288,7 +288,7 @@ const GetAllCustomers = async (req: Request, res: Response) => {
     const result = clients.map((client) => ({
       ...client,
       invoices: client.invoices.length,
-      quote: client.quote.length,
+      quotes: client.quotes.length,
     }));
 
     res.status(200).json({

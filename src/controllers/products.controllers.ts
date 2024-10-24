@@ -33,7 +33,7 @@ const AddProductsController = async (req: Request, res: Response) => {
       message: "Product created successfully.",
       id: product.id,
       productName: product.productName,
-      price: product.price / 100 + ".00",
+      price: product.price / 100 ,
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json(error);

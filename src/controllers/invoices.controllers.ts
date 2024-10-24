@@ -127,10 +127,10 @@ const AddInvoicesController = async (req: Request, res: Response) => {
           invoiceId: createdInvoice.id,
           price: item.price * 100, // Store price in cents for precision
           totalPrice: item.totalPrice * 100,
+          subTotal: item.subTotal * 100,
           taxableAmount: item.taxableAmount * 100,
         };
       });
-
       // Create invoice items
       await prisma.invoiceItems.createMany({ data: invoiceItemsData });
 
@@ -296,6 +296,7 @@ const UpdateInvoiceController = async (req: Request, res: Response) => {
             invoiceId,
             price: item.price * 100, // Store price in cents for precision
             totalPrice: item.totalPrice * 100,
+            subTotal: item.subTotal * 100,
             taxableAmount: item.taxableAmount * 100,
           };
         });
@@ -517,6 +518,7 @@ const GetSingleInvoiceController = async (req: Request, res: Response) => {
               price: true,
               quantity: true,
               totalPrice: true,
+              subTotal: true,
               taxableAmount: true,
               tax: {
                 select: {
@@ -546,33 +548,32 @@ const GetSingleInvoiceController = async (req: Request, res: Response) => {
           },
           shippingAddress: true,
           user: {
-            select:{
+            select: {
               id: true,
-          userName: true,
-          email: true,
-          companyName: true,
-          companyLogo: true,
-          companyPhone: true,
-          companyStamp: true,
-          companyAuthorizedSign: true,
-          street: true,
-          city: true,
-          state: true,
-          country: true,
-          postCode: true,
-          panNumber: true,
-          gstinNumber: true,
-          msmeNumber: true,
-          bankName: true,
-          bankAccountNumber: true,
-          bankBranchName: true,
-          ifscCode: true,
-            }
+              userName: true,
+              email: true,
+              companyName: true,
+              companyLogo: true,
+              companyPhone: true,
+              companyStamp: true,
+              companyAuthorizedSign: true,
+              street: true,
+              city: true,
+              state: true,
+              country: true,
+              postCode: true,
+              panNumber: true,
+              gstinNumber: true,
+              msmeNumber: true,
+              bankName: true,
+              bankAccountNumber: true,
+              bankBranchName: true,
+              ifscCode: true,
+            },
           },
           quote: true,
         },
       }),
-      
     ]);
 
     // Check if either invoice or user is not found
@@ -589,11 +590,12 @@ const GetSingleInvoiceController = async (req: Request, res: Response) => {
       subTotal: invoice.subTotal / 100,
       discount: invoice.discount / 100,
       totalTax: invoice.totalTax / 100,
-      invoiceItems: invoice.invoiceItems.map((item) => ({
+      invoiceItems: invoice.invoiceItems.map((item: any) => ({
         ...item, // Spread existing item properties
         price: item.price / 100, // Divide price by 100
         totalPrice: item.totalPrice / 100, // Divide totalPrice by 100
         taxableAmount: item.taxableAmount / 100, // Divide taxableAmount by 100
+        subTotal: item.subTotal / 100,
       })),
     };
 

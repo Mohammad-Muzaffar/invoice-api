@@ -135,6 +135,7 @@ const AddQuotesController = async (req: Request, res: Response) => {
           quoteId: createdQuote.id,
           price: item.price * 100, // Store price in cents for precision
           totalPrice: item.totalPrice * 100,
+          subTotal: item.subTotal * 100,
           taxableAmount: item.taxableAmount * 100,
         };
       });
@@ -304,6 +305,7 @@ const UpdateQuotesController = async (req: Request, res: Response) => {
             quoteId,
             price: item.price * 100, // Store price in cents for precision
             totalPrice: item.totalPrice * 100,
+            subTotal: item.subTotal * 100,
             taxableAmount: item.taxableAmount * 100,
           };
         });
@@ -527,6 +529,7 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
               price: true,
               quantity: true,
               totalPrice: true,
+              subTotal: true,
               taxableAmount: true,
               tax: {
                 select: {
@@ -597,11 +600,12 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
       subTotal: quote.subTotal / 100,
       discount: quote.discount / 100,
       totalTax: quote.totalTax / 100,
-      quoteItems: quote.quoteItems.map((item) => ({
+      quoteItems: quote.quoteItems.map((item: any) => ({
         ...item, // Spread existing item properties
         price: item.price / 100, // Divide price by 100
         totalPrice: item.totalPrice / 100, // Divide totalPrice by 100
         taxableAmount: item.taxableAmount / 100, // Divide taxableAmount by 100
+        subTotal: item.subTotal / 100,
       })),
     };
 
