@@ -29,6 +29,7 @@ const AddInvoicesController = async (req: Request, res: Response) => {
       clientId,
       shippingAddressId,
       invoiceItems,
+      userDetails,
     } = req.body;
 
     // Check if the invoice already exists
@@ -38,7 +39,7 @@ const AddInvoicesController = async (req: Request, res: Response) => {
     });
 
     if (invoiceExists) {
-      throw new ApiError(403, "Invoice Already Exists", [ 
+      throw new ApiError(403, "Invoice Already Exists", [
         `Invoice with number: ${invoiceExists.invoiceNumber} already exists.`,
       ]);
     }
@@ -51,9 +52,13 @@ const AddInvoicesController = async (req: Request, res: Response) => {
       0
     );
     if (calculatedSubTotal !== subTotal) {
-      throw new ApiError(400, `SubTotal Mismatch: The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`, [
-        `The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
-      ]);
+      throw new ApiError(
+        400,
+        `SubTotal Mismatch: The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
+        [
+          `The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
+        ]
+      );
     }
 
     // 2. Check that totalTax is the sum of all taxableAmount in invoice items
@@ -62,17 +67,25 @@ const AddInvoicesController = async (req: Request, res: Response) => {
       0
     );
     if (calculatedTotalTax !== totalTax) {
-      throw new ApiError(400, `TotalTax Mismatch: The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`, [
-        `The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
-      ]);
+      throw new ApiError(
+        400,
+        `TotalTax Mismatch: The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
+        [
+          `The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
+        ]
+      );
     }
 
     // 3. Check that total is subTotal + totalTax - discount
     const expectedTotal = subTotal + totalTax - discount;
     if (total !== expectedTotal) {
-      throw new ApiError(400, `Total Mismatch: The provided total (${total}) does not match the calculated total (${expectedTotal}).`, [
-        `The provided total (${total}) does not match the calculated total (${expectedTotal}).`,
-      ]);
+      throw new ApiError(
+        400,
+        `Total Mismatch: The provided total (${total}) does not match the calculated total (${expectedTotal}).`,
+        [
+          `The provided total (${total}) does not match the calculated total (${expectedTotal}).`,
+        ]
+      );
     }
 
     // Create the invoice and associated items in a transaction
@@ -95,6 +108,7 @@ const AddInvoicesController = async (req: Request, res: Response) => {
           igst: igst || null,
           clientId,
           shippingAddressId,
+          userId: userDetails.id,
         },
       });
 
@@ -153,9 +167,11 @@ const UpdateInvoiceController = async (req: Request, res: Response) => {
     });
 
     if (!existingInvoice) {
-      throw new ApiError(404, `Invoice not found: Invoice with id: ${invoiceId} does not exist.`, [
-        `Invoice with id: ${invoiceId} does not exist.`,
-      ]);
+      throw new ApiError(
+        404,
+        `Invoice not found: Invoice with id: ${invoiceId} does not exist.`,
+        [`Invoice with id: ${invoiceId} does not exist.`]
+      );
     }
 
     const {
@@ -181,13 +197,18 @@ const UpdateInvoiceController = async (req: Request, res: Response) => {
       // 1. Validate subTotal if it's provided
       if (subTotal && invoiceItems && invoiceItems.length > 0) {
         const calculatedSubTotal = invoiceItems.reduce(
-          (acc: number, item: any) => acc + (item.totalPrice - item.taxableAmount),
+          (acc: number, item: any) =>
+            acc + (item.totalPrice - item.taxableAmount),
           0
         );
         if (calculatedSubTotal !== subTotal) {
-          throw new ApiError(400, `SubTotal Mismatch: The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`, [
-            `The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
-          ]);
+          throw new ApiError(
+            400,
+            `SubTotal Mismatch: The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
+            [
+              `The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
+            ]
+          );
         }
       }
 
@@ -198,21 +219,31 @@ const UpdateInvoiceController = async (req: Request, res: Response) => {
           0
         );
         if (calculatedTotalTax !== totalTax) {
-          throw new ApiError(400, `TotalTax Mismatch: The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`, [
-            `The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
-          ]);
+          throw new ApiError(
+            400,
+            `TotalTax Mismatch: The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
+            [
+              `The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
+            ]
+          );
         }
       }
 
       // 3. Validate total if it's provided
       if (total) {
-        const expectedTotal = (subTotal || existingInvoice.subTotal / 100) +
-          (totalTax || existingInvoice.totalTax / 100) - discount;
+        const expectedTotal =
+          (subTotal || existingInvoice.subTotal / 100) +
+          (totalTax || existingInvoice.totalTax / 100) -
+          discount;
 
         if (total !== expectedTotal) {
-          throw new ApiError(400, `Total Mismatch: The provided total (${total}) does not match the calculated total (${expectedTotal}).`, [
-            `The provided total (${total}) does not match the calculated total (${expectedTotal}).`,
-          ]);
+          throw new ApiError(
+            400,
+            `Total Mismatch: The provided total (${total}) does not match the calculated total (${expectedTotal}).`,
+            [
+              `The provided total (${total}) does not match the calculated total (${expectedTotal}).`,
+            ]
+          );
         }
       }
     }
@@ -227,14 +258,16 @@ const UpdateInvoiceController = async (req: Request, res: Response) => {
         status: status || existingInvoice.status,
         total: total ? total * 100 : existingInvoice.total,
         subTotal: subTotal ? subTotal * 100 : existingInvoice.subTotal,
-        discount: discount !== undefined ? discount * 100 : existingInvoice.discount,
+        discount:
+          discount !== undefined ? discount * 100 : existingInvoice.discount,
         totalTax: totalTax ? totalTax * 100 : existingInvoice.totalTax,
         notes: notes || existingInvoice.notes,
         gst: gst || existingInvoice.gst,
         cgst: cgst || existingInvoice.cgst,
         sgst: sgst || existingInvoice.sgst,
         igst: igst || existingInvoice.igst,
-        shippingAddressId: shippingAddressId || existingInvoice.shippingAddressId,
+        shippingAddressId:
+          shippingAddressId || existingInvoice.shippingAddressId,
       };
 
       const updatedInvoice = await prisma.invoice.update({
@@ -346,13 +379,13 @@ const GetAllInvoiceController = async (req: Request, res: Response) => {
     const pageNumber = Number(page);
     const limitNumber = Number(limit);
     const skip = (pageNumber - 1) * limitNumber;
-
+    const userId = req.body.userDetails.id;
     // Build filter object
     const filters: any = {};
 
     if (clientId) filters.clientId = clientId as string; // Ensure clientId is a string
     if (status) filters.status = status as string;
-
+    if (userId) filters.userId = userId as string;
     // Client name filter
     if (clientName && typeof clientName === "string") {
       filters.client = {
@@ -461,9 +494,9 @@ const GetSingleInvoiceController = async (req: Request, res: Response) => {
     const invoiceId = req.params.id;
 
     // Fetch invoice and user concurrently
-    const [invoice, user] = await Promise.all([
+    const [invoice] = await Promise.all([
       prisma.invoice.findUnique({
-        where: { id: invoiceId },
+        where: { id: invoiceId, userId: req.body.userDetails.id },
         select: {
           id: true,
           invoiceNumber: true,
@@ -512,13 +545,9 @@ const GetSingleInvoiceController = async (req: Request, res: Response) => {
             },
           },
           shippingAddress: true,
-          quote: true,
-        },
-      }),
-      prisma.user.findUnique({
-        where: { id: req.body.userDetails.id },
-        select: {
-          id: true,
+          user: {
+            select:{
+              id: true,
           userName: true,
           email: true,
           companyName: true,
@@ -538,36 +567,40 @@ const GetSingleInvoiceController = async (req: Request, res: Response) => {
           bankAccountNumber: true,
           bankBranchName: true,
           ifscCode: true,
+            }
+          },
+          quote: true,
         },
       }),
+      
     ]);
 
     // Check if either invoice or user is not found
-    if (!invoice || !user) {
-      throw new ApiError(404, "Invoice or User not found.", [
-        "Invoice or User not found.",
+    if (!invoice) {
+      throw new ApiError(404, "Invoice not found or Not authorized.", [
+        "Invoice not found or Not authorized.",
       ]);
     }
 
     // Transform the invoice data
     const updatedInvoice = {
       ...invoice, // Spread existing invoice properties
-      total: (invoice.total / 100),
-      subTotal: (invoice.subTotal / 100),
-      discount: (invoice.discount / 100),
-      totalTax: (invoice.totalTax / 100),
-      invoiceItems: invoice.invoiceItems.map(item => ({
+      total: invoice.total / 100,
+      subTotal: invoice.subTotal / 100,
+      discount: invoice.discount / 100,
+      totalTax: invoice.totalTax / 100,
+      invoiceItems: invoice.invoiceItems.map((item) => ({
         ...item, // Spread existing item properties
-        price: (item.price / 100), // Divide price by 100
-        totalPrice: (item.totalPrice / 100), // Divide totalPrice by 100
-        taxableAmount: (item.taxableAmount / 100), // Divide taxableAmount by 100
+        price: item.price / 100, // Divide price by 100
+        totalPrice: item.totalPrice / 100, // Divide totalPrice by 100
+        taxableAmount: item.taxableAmount / 100, // Divide taxableAmount by 100
       })),
     };
 
     // Send response with transformed data
     res.status(200).json({
       status: "Success",
-      result: { invoice: updatedInvoice, user },
+      result: { invoice: updatedInvoice },
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
@@ -577,7 +610,7 @@ const GetSingleInvoiceController = async (req: Request, res: Response) => {
   } finally {
     await prisma.$disconnect();
   }
-}
+};
 
 export {
   AddInvoicesController,

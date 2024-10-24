@@ -38,6 +38,8 @@ model User {
   otps     Otp[]
   clients  Clients[]
   taxes    Taxes[]
+  invoices Invoice[]
+  quotes   Quote[]
 
   @@map("users") // Optional: Rename table in the DB
 }
@@ -136,6 +138,8 @@ model Invoice {
   client            Clients        @relation(fields: [clientId], references: [id])
   shippingAddressId String?
   shippingAddress   Address?       @relation(fields: [shippingAddressId], references: [id])
+  userId            String?        @unique
+  user              User?          @relation(fields: [userId], references: [id])
   quoteId           String?        @unique
   quote             Quote?         @relation(fields: [quoteId], references: [id])
 }
@@ -181,6 +185,8 @@ model Quote {
   client            Clients      @relation(fields: [clientId], references: [id])
   shippingAddressId String?
   shippingAddress   Address?     @relation(fields: [shippingAddressId], references: [id])
+  userId            String?      @unique
+  user              User?        @relation(fields: [userId], references: [id])
   invoiceId         String?
   invoice           Invoice?
 }

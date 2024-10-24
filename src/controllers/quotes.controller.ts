@@ -29,6 +29,7 @@ const AddQuotesController = async (req: Request, res: Response) => {
       clientId,
       shippingAddressId,
       quoteItems,
+      userDetails,
     } = req.body;
 
     // Check if the quote already exists
@@ -115,6 +116,7 @@ const AddQuotesController = async (req: Request, res: Response) => {
           igst: igst || null,
           clientId,
           shippingAddressId,
+          userId: userDetails.id,
         },
       });
 
@@ -265,7 +267,8 @@ const UpdateQuotesController = async (req: Request, res: Response) => {
         status: status || existingQuote.status,
         total: total ? total * 100 : existingQuote.total,
         subTotal: subTotal ? subTotal * 100 : existingQuote.subTotal,
-        discount: discount !== undefined ? discount * 100 : existingQuote.discount,
+        discount:
+          discount !== undefined ? discount * 100 : existingQuote.discount,
         totalTax: totalTax ? totalTax * 100 : existingQuote.totalTax,
         notes: notes || existingQuote.notes,
         gst: gst || existingQuote.gst,
@@ -384,12 +387,14 @@ const GetAllQuoteController = async (req: Request, res: Response) => {
     const pageNumber = Number(page);
     const limitNumber = Number(limit);
     const skip = (pageNumber - 1) * limitNumber;
+    const userId = req.body.userDetails.id;
 
     // Build filter object
     const filters: any = {};
 
     if (clientId) filters.clientId = clientId as string; // Ensure clientId is a string
     if (status) filters.status = status as string;
+    if (userId) filters.userId = userId as string;
 
     // Client name filter
     if (clientName && typeof clientName === "string") {
@@ -499,9 +504,9 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
     const quoteId = req.params.id;
 
     // Fetch quote and user concurrently
-    const [quote, user] = await Promise.all([
+    const [quote] = await Promise.all([
       prisma.quote.findUnique({
-        where: { id: quoteId },
+        where: { id: quoteId, userId: req.body.userDetails.id },
         select: {
           id: true,
           quoteNumber: true,
@@ -550,39 +555,38 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
             },
           },
           shippingAddress: true,
-        },
-      }),
-      prisma.user.findUnique({
-        where: { id: req.body.userDetails.id },
-        select: {
-          id: true,
-          userName: true,
-          email: true,
-          companyName: true,
-          companyLogo: true,
-          companyPhone: true,
-          companyStamp: true,
-          companyAuthorizedSign: true,
-          street: true,
-          city: true,
-          state: true,
-          country: true,
-          postCode: true,
-          panNumber: true,
-          gstinNumber: true,
-          msmeNumber: true,
-          bankName: true,
-          bankAccountNumber: true,
-          bankBranchName: true,
-          ifscCode: true,
+          user: {
+            select: {
+              id: true,
+              userName: true,
+              email: true,
+              companyName: true,
+              companyLogo: true,
+              companyPhone: true,
+              companyStamp: true,
+              companyAuthorizedSign: true,
+              street: true,
+              city: true,
+              state: true,
+              country: true,
+              postCode: true,
+              panNumber: true,
+              gstinNumber: true,
+              msmeNumber: true,
+              bankName: true,
+              bankAccountNumber: true,
+              bankBranchName: true,
+              ifscCode: true,
+            },
+          },
         },
       }),
     ]);
 
     // Check if either quote or user is not found
-    if (!quote || !user) {
-      throw new ApiError(404, "Quote or User not found.", [
-        "Quote or User not found.",
+    if (!quote) {
+      throw new ApiError(404, "Quote not found or Not authorized.", [
+        "Quote not found or Not authorized.",
       ]);
     }
 
@@ -604,7 +608,7 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
     // Send response with transformed data
     res.status(200).json({
       status: "Success",
-      result: { quote: updatedquote, user },
+      result: { quote: updatedquote },
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
