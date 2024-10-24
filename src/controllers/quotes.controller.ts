@@ -17,9 +17,9 @@ const AddQuotesController = async (req: Request, res: Response) => {
       quoteDate,
       quoteDueDate,
       status,
-      totalWithoutTax,
+      total,
       subTotal,
-      discount,
+      discount = 0, // Default discount to 0 if not provided
       totalTax,
       notes,
       gst,
@@ -29,6 +29,7 @@ const AddQuotesController = async (req: Request, res: Response) => {
       clientId,
       shippingAddressId,
       quoteItems,
+      userDetails,
     } = req.body;
 
     // Check if the quote already exists
@@ -38,9 +39,62 @@ const AddQuotesController = async (req: Request, res: Response) => {
     });
 
     if (quoteExists) {
-      throw new ApiError(403, "Quote Already Exists", [
-        `Quote with number: ${quoteExists.quoteNumber} already exists.`,
-      ]);
+      throw new ApiError(
+        403,
+        `Quote Already Exists: Quote with number: ${quoteExists.quoteNumber} already exists.`,
+        [`Quote with number: ${quoteExists.quoteNumber} already exists.`]
+      );
+    }
+
+    // **VALIDATIONS**: Ensure all calculations are correct
+    if (!quoteItems || quoteItems.length === 0) {
+      throw new ApiError(
+        400,
+        "No Items: At least one quote item must be provided.",
+        ["At least one quote item must be provided."]
+      );
+    }
+
+    // 1. Validate subTotal
+    const calculatedSubTotal = quoteItems.reduce(
+      (acc: number, item: any) => acc + (item.totalPrice - item.taxableAmount),
+      0
+    );
+    if (calculatedSubTotal !== subTotal) {
+      throw new ApiError(
+        400,
+        `SubTotal Mismatch: The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
+        [
+          `The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
+        ]
+      );
+    }
+
+    // 2. Validate totalTax
+    const calculatedTotalTax = quoteItems.reduce(
+      (acc: number, item: any) => acc + item.taxableAmount,
+      0
+    );
+    if (calculatedTotalTax !== totalTax) {
+      throw new ApiError(
+        400,
+        `TotalTax Mismatch: The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
+        [
+          `The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
+        ]
+      );
+    }
+
+    // 3. Validate total
+    const expectedTotal = subTotal + totalTax - discount;
+    if (total !== expectedTotal) {
+      throw new ApiError(
+        400,
+        `Total Mismatch: The provided total (${total}) does not match the expected total (${expectedTotal}).`,
+        [
+          `The provided total (${total}) does not match the expected total (${expectedTotal}).`,
+        ]
+      );
     }
 
     // Create the Quote and associated items in a transaction
@@ -51,7 +105,7 @@ const AddQuotesController = async (req: Request, res: Response) => {
           quoteDate,
           quoteDueDate,
           status,
-          totalWithoutTax: totalWithoutTax * 100,
+          total: total * 100,
           subTotal: subTotal * 100,
           discount: discount * 100,
           totalTax: totalTax * 100,
@@ -62,17 +116,28 @@ const AddQuotesController = async (req: Request, res: Response) => {
           igst: igst || null,
           clientId,
           shippingAddressId,
+          userId: userDetails.id,
         },
       });
 
       // Prepare quote items data
-      const quoteItemsData = quoteItems.map((item: any) => ({
-        ...item,
-        quoteId: createdQuote.id,
-        price: item.price * 100,
-        totalPrice: item.totalPrice * 100,
-        taxableAmount: item.taxableAmount * 100,
-      }));
+      const quoteItemsData = quoteItems.map((item: any) => {
+        // Ensure each item's totalPrice is correct (price * quantity)
+        const calculatedTotalPrice = item.price * item.quantity;
+        if (calculatedTotalPrice !== item.totalPrice) {
+          throw new ApiError(400, "TotalPrice Mismatch for Item", [
+            `The totalPrice for product ${item.productName} does not match the calculated total.`,
+          ]);
+        }
+
+        return {
+          ...item,
+          quoteId: createdQuote.id,
+          price: item.price * 100, // Store price in cents for precision
+          totalPrice: item.totalPrice * 100,
+          taxableAmount: item.taxableAmount * 100,
+        };
+      });
 
       // Create quote items
       await prisma.quoteItems.createMany({ data: quoteItemsData });
@@ -110,20 +175,22 @@ const UpdateQuotesController = async (req: Request, res: Response) => {
     });
 
     if (!existingQuote) {
-      throw new ApiError(404, "Quote not found", [
-        `Quote with id: ${quoteId} does not exist.`,
-      ]);
+      throw new ApiError(
+        404,
+        `Quote not found: Quote with id: ${quoteId} does not exist.`,
+        [`Quote with id: ${quoteId} does not exist.`]
+      );
     }
 
-    // Prepare data for update
+    // Extract fields from the request body
     const {
       quoteNumber,
       quoteDate,
       quoteDueDate,
       status,
-      totalWithoutTax,
+      total,
       subTotal,
-      discount,
+      discount = 0, // Default discount to 0 if not provided
       totalTax,
       notes,
       gst,
@@ -134,18 +201,74 @@ const UpdateQuotesController = async (req: Request, res: Response) => {
       quoteItems,
     } = req.body;
 
+    // **VALIDATIONS**: Ensure all calculations are correct based on what was provided
+    if (total || subTotal || totalTax) {
+      // 1. Validate subTotal if it's provided
+      if (subTotal && quoteItems && quoteItems.length > 0) {
+        const calculatedSubTotal = quoteItems.reduce(
+          (acc: number, item: any) =>
+            acc + (item.totalPrice - item.taxableAmount),
+          0
+        );
+        if (calculatedSubTotal !== subTotal) {
+          throw new ApiError(
+            400,
+            `SubTotal Mismatch: The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
+            [
+              `The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
+            ]
+          );
+        }
+      }
+
+      // 2. Validate totalTax if it's provided
+      if (totalTax && quoteItems && quoteItems.length > 0) {
+        const calculatedTotalTax = quoteItems.reduce(
+          (acc: number, item: any) => acc + item.taxableAmount,
+          0
+        );
+        if (calculatedTotalTax !== totalTax) {
+          throw new ApiError(
+            400,
+            `TotalTax Mismatch: The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
+            [
+              `The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
+            ]
+          );
+        }
+      }
+
+      // 3. Validate total if it's provided
+      if (total) {
+        const expectedTotal =
+          (subTotal || existingQuote.subTotal / 100) +
+          (totalTax || existingQuote.totalTax / 100) -
+          discount;
+
+        if (total !== expectedTotal) {
+          throw new ApiError(
+            400,
+            `Total Mismatch: The provided total (${total}) does not match the calculated total (${expectedTotal}).`,
+            [
+              `The provided total (${total}) does not match the calculated total (${expectedTotal}).`,
+            ]
+          );
+        }
+      }
+    }
+
+    // Proceed to update the quote and quoteItems if everything is valid
     const updatedQuote = await prisma.$transaction(async (prisma) => {
-      // Update the Quote
+      // Update the quote data
       const updatedData = {
         quoteNumber: quoteNumber || existingQuote.quoteNumber,
         quoteDate: quoteDate || existingQuote.quoteDate,
         quoteDueDate: quoteDueDate || existingQuote.quoteDueDate,
         status: status || existingQuote.status,
-        totalWithoutTax: totalWithoutTax
-          ? totalWithoutTax * 100
-          : existingQuote.totalWithoutTax,
+        total: total ? total * 100 : existingQuote.total,
         subTotal: subTotal ? subTotal * 100 : existingQuote.subTotal,
-        discount: discount ? discount * 100 : existingQuote.discount,
+        discount:
+          discount !== undefined ? discount * 100 : existingQuote.discount,
         totalTax: totalTax ? totalTax * 100 : existingQuote.totalTax,
         notes: notes || existingQuote.notes,
         gst: gst || existingQuote.gst,
@@ -162,17 +285,28 @@ const UpdateQuotesController = async (req: Request, res: Response) => {
 
       // Handle quote items
       if (quoteItems && quoteItems.length > 0) {
+        // Delete existing quote items
         await prisma.quoteItems.deleteMany({
           where: { quoteId },
         });
 
-        const quoteItemsData = quoteItems.map((item: any) => ({
-          ...item,
-          quoteId,
-          price: item.price * 100,
-          totalPrice: item.totalPrice * 100,
-          taxableAmount: item.taxableAmount * 100,
-        }));
+        const quoteItemsData = quoteItems.map((item: any) => {
+          // Ensure each item's totalPrice is correct (price * quantity)
+          const calculatedTotalPrice = item.price * item.quantity;
+          if (calculatedTotalPrice !== item.totalPrice) {
+            throw new ApiError(400, "TotalPrice Mismatch for Item", [
+              `The totalPrice for product ${item.productName} does not match the calculated total.`,
+            ]);
+          }
+
+          return {
+            ...item,
+            quoteId,
+            price: item.price * 100, // Store price in cents for precision
+            totalPrice: item.totalPrice * 100,
+            taxableAmount: item.taxableAmount * 100,
+          };
+        });
 
         await prisma.quoteItems.createMany({ data: quoteItemsData });
       }
@@ -253,12 +387,14 @@ const GetAllQuoteController = async (req: Request, res: Response) => {
     const pageNumber = Number(page);
     const limitNumber = Number(limit);
     const skip = (pageNumber - 1) * limitNumber;
+    const userId = req.body.userDetails.id;
 
     // Build filter object
     const filters: any = {};
 
     if (clientId) filters.clientId = clientId as string; // Ensure clientId is a string
     if (status) filters.status = status as string;
+    if (userId) filters.userId = userId as string;
 
     // Client name filter
     if (clientName && typeof clientName === "string") {
@@ -310,7 +446,7 @@ const GetAllQuoteController = async (req: Request, res: Response) => {
         quoteDate: true,
         quoteDueDate: true,
         status: true,
-        totalWithoutTax: true,
+        total: true,
         subTotal: true,
         discount: true,
         totalTax: true,
@@ -336,7 +472,7 @@ const GetAllQuoteController = async (req: Request, res: Response) => {
     // Map results to include item count
     const result = quotes.map((quote) => ({
       ...quote,
-      totalWithoutTax: quote.totalWithoutTax / 100,
+      total: quote.total / 100,
       subTotal: quote.subTotal / 100,
       discount: quote.discount / 100,
       totalTax: quote.totalTax / 100,
@@ -368,16 +504,16 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
     const quoteId = req.params.id;
 
     // Fetch quote and user concurrently
-    const [quote, user] = await Promise.all([
+    const [quote] = await Promise.all([
       prisma.quote.findUnique({
-        where: { id: quoteId },
+        where: { id: quoteId, userId: req.body.userDetails.id },
         select: {
           id: true,
           quoteNumber: true,
           quoteDate: true,
           quoteDueDate: true,
           status: true,
-          totalWithoutTax: true,
+          total: true,
           subTotal: true,
           discount: true,
           totalTax: true,
@@ -419,46 +555,45 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
             },
           },
           shippingAddress: true,
-        },
-      }),
-      prisma.user.findUnique({
-        where: { id: req.body.userDetails.id },
-        select: {
-          id: true,
-          userName: true,
-          email: true,
-          companyName: true,
-          companyLogo: true,
-          companyPhone: true,
-          companyStamp: true,
-          companyAuthorizedSign: true,
-          street: true,
-          city: true,
-          state: true,
-          country: true,
-          postCode: true,
-          panNumber: true,
-          gstinNumber: true,
-          msmeNumber: true,
-          bankName: true,
-          bankAccountNumber: true,
-          bankBranchName: true,
-          ifscCode: true,
+          user: {
+            select: {
+              id: true,
+              userName: true,
+              email: true,
+              companyName: true,
+              companyLogo: true,
+              companyPhone: true,
+              companyStamp: true,
+              companyAuthorizedSign: true,
+              street: true,
+              city: true,
+              state: true,
+              country: true,
+              postCode: true,
+              panNumber: true,
+              gstinNumber: true,
+              msmeNumber: true,
+              bankName: true,
+              bankAccountNumber: true,
+              bankBranchName: true,
+              ifscCode: true,
+            },
+          },
         },
       }),
     ]);
 
     // Check if either quote or user is not found
-    if (!quote || !user) {
-      throw new ApiError(404, "Quote or User not found.", [
-        "Quote or User not found.",
+    if (!quote) {
+      throw new ApiError(404, "Quote not found or Not authorized.", [
+        "Quote not found or Not authorized.",
       ]);
     }
 
     // Transform the quote data
     const updatedquote = {
       ...quote, // Spread existing quote properties
-      totalWithoutTax: quote.totalWithoutTax / 100,
+      total: quote.total / 100,
       subTotal: quote.subTotal / 100,
       discount: quote.discount / 100,
       totalTax: quote.totalTax / 100,
@@ -473,7 +608,7 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
     // Send response with transformed data
     res.status(200).json({
       status: "Success",
-      result: { quote: updatedquote, user },
+      result: { quote: updatedquote },
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({

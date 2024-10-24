@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import { UserUpdateSchema } from "../config/user.zod";
 import { ApiError } from "../utils/apiError";
+import { uploadOnCloudinary } from "../utils/cloudinary";
 
 const UpdateUserController = async (req: Request, res: Response) => {
   const prisma = new PrismaClient();
@@ -63,4 +64,61 @@ const UpdateUserController = async (req: Request, res: Response) => {
   }
 };
 
-export { UpdateUserController };
+const UploadUserController = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+
+  try {
+    const files = req.files as Express.Multer.File[];
+
+    // Check for uploaded files
+    if (!files || files.length === 0) {
+      throw new ApiError(400, "No files uploaded!", ["No files found!"]);
+    }
+
+    // Get the file paths
+    const localFilePaths = files.map((file) => file.path);
+
+    // Ensure we have enough files before uploading
+    const [companyLogo, companyStamp, companyAuthorizedSign] =
+      await Promise.all(
+        localFilePaths.map((path, index) =>
+          index < 3 ? uploadOnCloudinary(path, res) : null
+        )
+      );
+
+    // Update user with uploaded file URLs
+
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: req.body.userDetails.id,
+      },
+      data: {
+        companyLogo: companyLogo?.toString() || null,
+        companyStamp: companyStamp?.toString() || null,
+        companyAuthorizedSign: companyAuthorizedSign?.toString() || null,
+      },
+    });
+
+    if (!updatedUser) {
+      throw new ApiError(500, "Something went wrong.", [
+        "Something went wrong while uploading files.",
+        "User does not exist.",
+      ]);
+    }
+
+    res.status(200).json({
+      status: "Success",
+      id: updatedUser.id,
+      companyLogo: updatedUser.companyLogo,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      status: "Error",
+      message: error.message || "An unexpected error occurred.",
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+export { UpdateUserController, UploadUserController };

@@ -19,18 +19,20 @@ import { REFRESH_TOKEN_SECRET } from "../config/config";
 import { SendForgotPasswordMail } from "../utils/sendEmails";
 
 const twoDays = 2 * 24 * 60 * 60 * 1000;
+const expiresDateTwo = new Date(Date.now() + twoDays);
 const fifteenDays = 15 * 24 * 60 * 60 * 1000;
+const expiresDateFifteen = new Date(Date.now() + fifteenDays);
 
 const cookieOptionsTwoDays = {
   httpOnly: true,
   secure: true,
-  maxAge: twoDays,
+  expires: expiresDateTwo,
 };
 
 const cookieOptionsFifteenDays = {
   httpOnly: true,
   secure: true,
-  maxAge: fifteenDays,
+  expires: expiresDateFifteen
 };
 
 const RegisterController = async (req: Request, res: Response) => {
@@ -199,8 +201,8 @@ const LogoutController = async (req: Request, res: Response) => {
 
     res
       .status(200)
-      .clearCookie("accessToken", cookieOptionsTwoDays)
-      .clearCookie("refreshToken", cookieOptionsFifteenDays)
+      .clearCookie("accessToken")
+      .clearCookie("refreshToken")
       .json({
         message: "User Logged Out.",
       });
