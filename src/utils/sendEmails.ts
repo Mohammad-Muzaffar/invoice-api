@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
-dotenv.config({ path: "/home/am-pc-02/invoice-api/.env" });
+dotenv.config({ path: "./.env" });
 
 const SendForgotPasswordMail = async ({
   otp,

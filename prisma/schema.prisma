@@ -203,9 +203,9 @@ model InvoiceItems {
 
   taxableAmount Int
 
-  taxId String?
+  taxId String
 
-  tax Taxes? @relation(fields: [taxId], references: [id])
+  tax Taxes @relation(fields: [taxId], references: [id])
 
   productId String
 
@@ -346,6 +346,7 @@ model PurchaseInvoiceItems {
   taxableAmount      Int
   invoiceId          String
   purchaseInvoice    PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  @@index([invoiceId])
 }
 
 enum InvoiceStatus {
