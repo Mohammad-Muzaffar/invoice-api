@@ -7,6 +7,7 @@ import productsRouter from "./products.routes";
 import invoiceRouter from "./invoices.routes";
 import quoteRouter from "./quotes.routes";
 import purchaseRouter from "./purchase-invoice.routes";
+import exportRouter from "./exports.routes";
 
 const router = express.Router();
 
@@ -19,5 +20,6 @@ router.use("/products/", productsRouter);
 router.use("/invoices/", invoiceRouter);
 router.use("/quotes/", quoteRouter);
 router.use("/purchase-invoices/", purchaseRouter);
+router.use("/exports/", exportRouter);
 
 export default router;
