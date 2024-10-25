@@ -47,36 +47,6 @@ const AddPurchaseInvoicesController = async (req: Request, res: Response) => {
 
     // **VALIDATIONS**: Ensure all the calculations are correct
 
-    // 1. Check that subTotal is the sum of totalPrice for all invoice items
-    const calculatedSubTotal = invoiceItems.reduce(
-      (acc: number, item: any) => acc + (item.totalPrice - item.taxableAmount),
-      0
-    );
-    if (calculatedSubTotal !== subTotal) {
-      throw new ApiError(
-        400,
-        `SubTotal Mismatch: The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
-        [
-          `The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
-        ]
-      );
-    }
-
-    // 2. Check that totalTax is the sum of all taxableAmount in invoice items
-    const calculatedTotalTax = invoiceItems.reduce(
-      (acc: number, item: any) => acc + item.taxableAmount,
-      0
-    );
-    if (calculatedTotalTax !== totalTax) {
-      throw new ApiError(
-        400,
-        `TotalTax Mismatch: The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
-        [
-          `The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
-        ]
-      );
-    }
-
     // 3. Check that total is subTotal + totalTax - discount
     const expectedTotal = subTotal + totalTax - discount;
     if (total !== expectedTotal) {
@@ -197,41 +167,6 @@ const UpdatePurchaseInvoiceController = async (req: Request, res: Response) => {
 
     // **VALIDATIONS**: Ensure all calculations are correct based on what was provided
     if (total || subTotal || totalTax) {
-      // 1. Validate subTotal if it's provided
-      if (subTotal && invoiceItems && invoiceItems.length > 0) {
-        const calculatedSubTotal = invoiceItems.reduce(
-          (acc: number, item: any) =>
-            acc + (item.totalPrice - item.taxableAmount),
-          0
-        );
-        if (calculatedSubTotal !== subTotal) {
-          throw new ApiError(
-            400,
-            `SubTotal Mismatch: The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
-            [
-              `The provided subTotal (${subTotal}) does not match the calculated subTotal (${calculatedSubTotal}).`,
-            ]
-          );
-        }
-      }
-
-      // 2. Validate totalTax if it's provided
-      if (totalTax && invoiceItems && invoiceItems.length > 0) {
-        const calculatedTotalTax = invoiceItems.reduce(
-          (acc: number, item: any) => acc + item.taxableAmount,
-          0
-        );
-        if (calculatedTotalTax !== totalTax) {
-          throw new ApiError(
-            400,
-            `TotalTax Mismatch: The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
-            [
-              `The provided totalTax (${totalTax}) does not match the calculated totalTax (${calculatedTotalTax}).`,
-            ]
-          );
-        }
-      }
-
       // 3. Validate total if it's provided
       if (total) {
         const expectedTotal =

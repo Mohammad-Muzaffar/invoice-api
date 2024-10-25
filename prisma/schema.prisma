@@ -121,9 +121,10 @@ model Product {
   productDescription String?
   hsnCode            String?
   price              Int
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  taxAmount          Int?     
+  subTotal           Int?     
+  userId             String
+  user               User    @relation(fields: [userId], references: [id])
 
   taxId String
   tax   Taxes  @relation(fields: [taxId], references: [id])
@@ -346,6 +347,7 @@ model PurchaseInvoiceItems {
   taxableAmount      Int
   invoiceId          String
   purchaseInvoice    PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
   @@index([invoiceId])
 }
 

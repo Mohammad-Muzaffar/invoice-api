@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Product" ADD COLUMN     "subTotal" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "taxAmount" INTEGER NOT NULL DEFAULT 0;
