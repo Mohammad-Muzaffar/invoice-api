@@ -11,6 +11,15 @@ const AddProductsController = async (req: Request, res: Response) => {
     if (!success) {
       throw new ApiError(400, "Zod Validation Error!", [error]);
     }
+    const tax = await prisma.taxes.findUnique({
+      where: {
+        id: req.body.taxId,
+      },
+    });
+
+    const gst = (tax?.gst && tax.gst / 100) || 0;
+    const taxAmount = req.body.price * gst * 100;
+    const subTotal = (req.body.price - taxAmount / 100) * 100;
 
     const product = await prisma.product.create({
       data: {
@@ -18,6 +27,8 @@ const AddProductsController = async (req: Request, res: Response) => {
         productDescription: req.body.productDescription || null,
         hsnCode: req.body.hsnCode || null,
         price: req.body.price * 100, // decimal management
+        taxAmount: taxAmount,
+        subTotal: subTotal,
         taxId: req.body.taxId,
         userId: req.body.userDetails.id,
       },
@@ -33,7 +44,7 @@ const AddProductsController = async (req: Request, res: Response) => {
       message: "Product created successfully.",
       id: product.id,
       productName: product.productName,
-      price: product.price / 100 ,
+      price: product.price / 100,
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json(error);
@@ -68,6 +79,16 @@ const UpdateProductsController = async (req: Request, res: Response) => {
       ]);
     }
 
+    const tax = await prisma.taxes.findUnique({
+      where: {
+        id: req.body.taxId || product.taxId,
+      },
+    });
+
+    const gst = (tax?.gst && tax.gst / 100) || 0;
+    const taxAmount = req.body.price * gst * 100;
+    const subTotal = (req.body.price - taxAmount / 100) * 100;
+
     const updatedProduct = await prisma.product.update({
       where: {
         id: id,
@@ -79,6 +100,8 @@ const UpdateProductsController = async (req: Request, res: Response) => {
           req.body.productDescription || product.productDescription,
         hsnCode: req.body.hsnCode || product.hsnCode,
         price: req.body.price * 100 || product.price, // decimal management
+        subTotal: subTotal || product.subTotal,
+        taxAmount: taxAmount || product.taxAmount,
         taxId: req.body.taxId || product.taxId,
       },
     });
@@ -218,6 +241,8 @@ const GetSingleProductsController = async (req: Request, res: Response) => {
         productName: true,
         productDescription: true,
         price: true,
+        subTotal: true,
+        taxAmount: true,
         hsnCode: true,
         tax: true,
       },
@@ -255,6 +280,8 @@ const GetAllProductsById = async (req: Request, res: Response) => {
         id: true,
         productName: true,
         price: true,
+        taxAmount: true,
+        subTotal: true,
         hsnCode: true,
         taxId: true,
       },
@@ -269,6 +296,8 @@ const GetAllProductsById = async (req: Request, res: Response) => {
     const allProducts = products.map((product) => ({
       ...product,
       price: product.price / 100,
+      taxAmount: product.taxAmount && product.taxAmount / 100,
+      subTotal: product.subTotal && product.subTotal / 100,
     }));
 
     res.status(200).json({
