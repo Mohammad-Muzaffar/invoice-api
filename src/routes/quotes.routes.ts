@@ -5,6 +5,7 @@ import {
   DeleteQuotesController,
   GetAllQuoteController,
   GetSingleQuoteController,
+  QuoteToInvoiceController,
   UpdateQuotesController,
 } from "../controllers/quotes.controller";
 
@@ -15,5 +16,6 @@ router.route("/").get(AuthMiddleware, GetAllQuoteController);
 router.route("/:id").put(AuthMiddleware, UpdateQuotesController);
 router.route("/:id").delete(AuthMiddleware, DeleteQuotesController);
 router.route("/:id").get(AuthMiddleware, GetSingleQuoteController);
+router.route("/quote-to-invoice/:id").post(AuthMiddleware, QuoteToInvoiceController);
 
 export default router;

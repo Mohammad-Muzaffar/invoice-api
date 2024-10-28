@@ -58,7 +58,53 @@ const UpdateUserController = async (req: Request, res: Response) => {
       id: updatedUser.id,
     });
   } catch (error: any) {
-    res.status(error.statusCode).json(error);
+    res.status(error.statusCode || 500).json(error);
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+const GetUserDetatilsController = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        id: req.body.userDetails.id,
+      },
+      select: {
+        userName: true,
+        email: true,
+        companyName: true,
+        companyLogo: true,
+        companyPhone: true,
+        companyAuthorizedSign: true,
+        companyStamp: true,
+        street: true,
+        city: true,
+        state: true,
+        country: true,
+        postCode: true,
+        panNumber: true,
+        gstinNumber: true,
+        msmeNumber: true,
+        bankName: true,
+        bankAccountNumber: true,
+        bankBranchName: true,
+        ifscCode: true,
+      },
+    });
+
+    if (!user) {
+      throw new ApiError(404, "User Not Found!");
+    }
+
+    res.status(200).json({
+      status: "Success",
+      message: "User Details Updated Successfully!",
+      user,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json(error);
   } finally {
     await prisma.$disconnect();
   }
@@ -121,4 +167,8 @@ const UploadUserController = async (req: Request, res: Response) => {
   }
 };
 
-export { UpdateUserController, UploadUserController };
+export {
+  UpdateUserController,
+  UploadUserController,
+  GetUserDetatilsController,
+};
