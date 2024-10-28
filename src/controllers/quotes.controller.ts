@@ -624,10 +624,120 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
   }
 };
 
+const QuoteToInvoiceController = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+  try {
+    const quoteId = req.params.id;
+
+    // Fetch the quote details
+    const quote = await prisma.quote.findUnique({
+      where: { id: quoteId },
+      select: {
+        id: true,
+        quoteNumber: true,
+        quoteDate: true,
+        quoteDueDate: true,
+        status: true,
+        total: true,
+        subTotal: true,
+        discount: true,
+        totalTax: true,
+        notes: true,
+        clientId: true,
+        shippingAddressId: true,
+        userId: true,
+        quoteItems: {
+          select: {
+            id: true,
+            productName: true,
+            productDescription: true,
+            hsnCode: true,
+            price: true,
+            quantity: true,
+            totalPrice: true,
+            subTotal: true,
+            taxableAmount: true,
+            productId: true,
+            taxId: true, // Ensure this field exists in both models
+          },
+        },
+      },
+    });
+
+    if (!quote) {
+      throw new ApiError(404, `Quote with id: ${quoteId} Not Found!`);
+    }
+
+    // Start a transaction
+    const result = await prisma.$transaction(async (prisma) => {
+      // Update the quote status
+      await prisma.quote.update({
+        where: { id: quote.id },
+        data: {
+          updatedAt: new Date(),
+          status: "Converted_To_Invoice",
+        },
+      });
+
+      // Create the invoice
+      const generatedInvoice = await prisma.invoice.create({
+        data: {
+          invoiceNumber: quote.quoteNumber,
+          invoiceDate: quote.quoteDate,
+          invoiceDueDate: quote.quoteDueDate,
+          clientId: quote.clientId,
+          userId: quote.userId,
+          shippingAddressId: quote.shippingAddressId,
+          status: "Pending",
+          total: quote.total,
+          subTotal: quote.subTotal,
+          discount: quote.discount,
+          totalTax: quote.totalTax,
+          notes: quote.notes,
+          quoteId: quote.id, // Link back to the original quote
+        },
+      });
+
+      // Prepare invoice items data
+      const invoiceItemsData = quote.quoteItems.map((item) => ({
+        productName: item.productName, // Ensure you map necessary fields
+        productDescription: item.productDescription || null, // Handle optional fields
+        hsnCode: item.hsnCode || null, // Handle optional fields
+        price: item.price,
+        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        subTotal: item.subTotal,
+        taxableAmount: item.taxableAmount,
+        productId: item.productId,
+        taxId: item.taxId, // Ensure taxId is defined in both models
+        invoiceId: generatedInvoice.id, // Link to the created invoice
+      }));
+
+      // Create invoice items in bulk
+      await prisma.invoiceItems.createMany({
+        data: invoiceItemsData, // Ensure this matches your InvoiceItems model structure
+      });
+
+      return generatedInvoice; // Return the created invoice for further use if needed
+    });
+
+    res.status(201).json({
+      status: "Success",
+      message: "Quote converted to Invoice successfully.",
+      invoiceId: result.id, // Return the created invoice details
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json(error.message);
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
 export {
   AddQuotesController,
   UpdateQuotesController,
   DeleteQuotesController,
   GetAllQuoteController,
   GetSingleQuoteController,
+  QuoteToInvoiceController,
 };

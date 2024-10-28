@@ -2,7 +2,11 @@
 
 ## Steps to run:
 
-1. Clone the repo.
+1. Clone the repo and install dependencies.
+
+    ```bash
+    npm install
+    ```
 
 2. Install Docker if you don't have it already installed.
 

@@ -106,7 +106,7 @@ const RegisterController = async (req: Request, res: Response) => {
         refreshTokenExpiresAt: refreshExpires,
       });
   } catch (error: any) {
-    res.status(error.statusCode).json(error);
+    res.status(error.statusCode || 500).json(error);
   } finally {
     await prisma.$disconnect();
   }
@@ -179,7 +179,7 @@ const LoginController = async (req: Request, res: Response) => {
         refreshTokenExpiresAt: refreshExpires,
       });
   } catch (error: any) {
-    res.status(error.statusCode).json(error);
+    res.status(error.statusCode || 500).json(error);
   } finally {
     await prisma.$disconnect();
   }
