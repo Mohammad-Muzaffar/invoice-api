@@ -48,7 +48,7 @@ const AddInvoicesController = async (req: Request, res: Response) => {
 
     // 1. Check that subTotal is the sum of totalPrice for all invoice items
     const calculatedSubTotal = invoiceItems.reduce(
-      (acc: number, item: any) => acc + (item.totalPrice - item.taxableAmount),
+      (acc: number, item: any) => acc + (item.subTotal),
       0
     );
     if (calculatedSubTotal !== subTotal) {

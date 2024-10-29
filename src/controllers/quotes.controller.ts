@@ -57,7 +57,7 @@ const AddQuotesController = async (req: Request, res: Response) => {
 
     // 1. Validate subTotal
     const calculatedSubTotal = quoteItems.reduce(
-      (acc: number, item: any) => acc + (item.totalPrice - item.taxableAmount),
+      (acc: number, item: any) => acc + (item.subTotal),
       0
     );
     if (calculatedSubTotal !== subTotal) {
