@@ -100,7 +100,6 @@ const GetUserDetatilsController = async (req: Request, res: Response) => {
 
     res.status(200).json({
       status: "Success",
-      message: "User Details Updated Successfully!",
       user,
     });
   } catch (error: any) {
@@ -167,8 +166,155 @@ const UploadUserController = async (req: Request, res: Response) => {
   }
 };
 
+const UploadCompanyLogoController = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+  try {
+    const file = req.file as Express.Multer.File;
+
+    // Check for uploaded files
+    if (!file) {
+      throw new ApiError(400, "No files uploaded!", ["No files found!"]);
+    }
+
+    // Get the file paths
+    const localFilePath = file.path;
+    const companyLogo = await uploadOnCloudinary(localFilePath, res);
+
+    // Update user with uploaded file URLs
+
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: req.body.userDetails.id,
+      },
+      data: {
+        companyLogo: companyLogo?.toString() || null,
+      },
+    });
+
+    if (!updatedUser) {
+      throw new ApiError(500, "Something went wrong.", [
+        "Something went wrong while uploading files.",
+        "User does not exist.",
+      ]);
+    }
+
+    res.status(200).json({
+      status: "Success",
+      id: updatedUser.id,
+      companyLogo: updatedUser.companyLogo,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      status: "Error",
+      message: error.message || "An unexpected error occurred.",
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+const UploadCompanyStampController = async (req: Request, res: Response) => {
+  const prisma = new PrismaClient();
+  try {
+    const file = req.file as Express.Multer.File;
+
+    // Check for uploaded files
+    if (!file) {
+      throw new ApiError(400, "No files uploaded!", ["No files found!"]);
+    }
+
+    // Get the file paths
+    const localFilePath = file.path;
+    const companyStamp = await uploadOnCloudinary(localFilePath, res);
+
+    // Update user with uploaded file URLs
+
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: req.body.userDetails.id,
+      },
+      data: {
+        companyStamp: companyStamp?.toString() || null,
+      },
+    });
+
+    if (!updatedUser) {
+      throw new ApiError(500, "Something went wrong.", [
+        "Something went wrong while uploading files.",
+        "User does not exist.",
+      ]);
+    }
+
+    res.status(200).json({
+      status: "Success",
+      id: updatedUser.id,
+      companyStamp: updatedUser.companyStamp,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      status: "Error",
+      message: error.message || "An unexpected error occurred.",
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+const UploadCompanyAuthorizedSignController = async (
+  req: Request,
+  res: Response
+) => {
+  const prisma = new PrismaClient();
+  try {
+    const file = req.file as Express.Multer.File;
+
+    // Check for uploaded files
+    if (!file) {
+      throw new ApiError(400, "No files uploaded!", ["No files found!"]);
+    }
+
+    // Get the file paths
+    const localFilePath = file.path;
+    const companyAuthorizedSign = await uploadOnCloudinary(localFilePath, res);
+
+    // Update user with uploaded file URLs
+
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: req.body.userDetails.id,
+      },
+      data: {
+        companyAuthorizedSign: companyAuthorizedSign?.toString() || null,
+      },
+    });
+
+    if (!updatedUser) {
+      throw new ApiError(500, "Something went wrong.", [
+        "Something went wrong while uploading files.",
+        "User does not exist.",
+      ]);
+    }
+
+    res.status(200).json({
+      status: "Success",
+      id: updatedUser.id,
+      companyAuthorizedSign: updatedUser.companyAuthorizedSign,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      status: "Error",
+      message: error.message || "An unexpected error occurred.",
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
 export {
   UpdateUserController,
   UploadUserController,
   GetUserDetatilsController,
+  UploadCompanyLogoController,
+  UploadCompanyStampController,
+  UploadCompanyAuthorizedSignController,
 };
