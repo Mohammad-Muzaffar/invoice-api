@@ -2,7 +2,7 @@
 
 ## Steps to run:
 
-1. Clone the repo and install dependencies.
+1. Clone or Fork the repo and install dependencies.
 
     ```bash
     npm install
