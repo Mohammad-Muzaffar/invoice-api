@@ -158,6 +158,7 @@ const UpdateInvoiceController = async (req: Request, res: Response) => {
     // Validate incoming data
     const { success, error } = UpdateInvoiceSchema.safeParse(req.body);
     if (!success) {
+      console.error(error);
       throw new ApiError(400, "Zod validation error!", [error]);
     }
 
@@ -509,9 +510,11 @@ const GetSingleInvoiceController = async (req: Request, res: Response) => {
           discount: true,
           totalTax: true,
           notes: true,
+          shippingAddressId: true,
           invoiceItems: {
             select: {
               id: true,
+              productId: true,
               productName: true,
               productDescription: true,
               hsnCode: true,
@@ -520,6 +523,7 @@ const GetSingleInvoiceController = async (req: Request, res: Response) => {
               totalPrice: true,
               subTotal: true,
               taxableAmount: true,
+              taxId: true,
               tax: {
                 select: {
                   id: true,
