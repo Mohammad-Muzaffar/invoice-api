@@ -57,7 +57,7 @@ const AddQuotesController = async (req: Request, res: Response) => {
 
     // 1. Validate subTotal
     const calculatedSubTotal = quoteItems.reduce(
-      (acc: number, item: any) => acc + (item.subTotal),
+      (acc: number, item: any) => acc + item.subTotal,
       0
     );
     if (calculatedSubTotal !== subTotal) {
@@ -98,6 +98,7 @@ const AddQuotesController = async (req: Request, res: Response) => {
     }
 
     // Create the Quote and associated items in a transaction
+    // Create the Quote and associated items in a transaction
     const generatedQuote = await prisma.$transaction(async (prisma) => {
       const createdQuote = await prisma.quote.create({
         data: {
@@ -114,9 +115,18 @@ const AddQuotesController = async (req: Request, res: Response) => {
           cgst: cgst || null,
           sgst: sgst || null,
           igst: igst || null,
-          clientId,
-          shippingAddressId,
-          userId: userDetails.id,
+          // clientId: clientId,
+          client: {
+            connect: { id: clientId }, // This will connect the client to the quote
+          },
+          // shippingAddressId,
+          shippingAddress: {
+            connect: { id: shippingAddressId },
+          },
+          // userId: userDetails.id,
+          user: { 
+            connect: {id: userDetails.id}
+          }
         },
       });
 
