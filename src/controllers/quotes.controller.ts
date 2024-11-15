@@ -511,6 +511,7 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
         where: { id: quoteId, userId: req.body.userDetails.id },
         select: {
           id: true,
+          shippingAddressId: true,
           quoteNumber: true,
           quoteDate: true,
           quoteDueDate: true,
@@ -523,6 +524,7 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
           quoteItems: {
             select: {
               id: true,
+              productId: true,
               productName: true,
               productDescription: true,
               hsnCode: true,
@@ -531,6 +533,7 @@ const GetSingleQuoteController = async (req: Request, res: Response) => {
               totalPrice: true,
               subTotal: true,
               taxableAmount: true,
+              taxId: true,
               tax: {
                 select: {
                   id: true,
