@@ -245,7 +245,7 @@ model Quote {
 
   igst Int?
 
-  notes String
+  notes String?
 
   createdAt DateTime @default(now())
 
