@@ -156,11 +156,11 @@ const UpdateInvoiceController = async (req: Request, res: Response) => {
 
   try {
     // Validate incoming data
-    const { success, error } = UpdateInvoiceSchema.safeParse(req.body);
-    if (!success) {
-      console.error(error);
-      throw new ApiError(400, "Zod validation error!", [error]);
-    }
+    // const { success, error } = UpdateInvoiceSchema.safeParse(req.body);
+    // if (!success) {
+    //   console.error(error);
+    //   throw new ApiError(400, "Zod validation error!", [error]);
+    // }
 
     const invoiceId = req.params.id;
     const existingInvoice = await prisma.invoice.findUnique({
