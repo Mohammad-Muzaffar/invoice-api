@@ -165,10 +165,10 @@ const UpdateQuotesController = async (req: Request, res: Response) => {
 
   try {
     // Validate incoming data
-    const { success, error } = UpdateQuoteSchema.safeParse(req.body);
-    if (!success) {
-      throw new ApiError(400, "Zod validation error!", [error]);
-    }
+    // const { success, error } = UpdateQuoteSchema.safeParse(req.body);
+    // if (!success) {
+    //   throw new ApiError(400, "Zod validation error!", [error]);
+    // }
 
     const quoteId = req.params.id;
     const existingQuote = await prisma.quote.findUnique({
