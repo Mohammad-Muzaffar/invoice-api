@@ -98,7 +98,7 @@ const AddPurchaseInvoicesController = async (req: Request, res: Response) => {
             price: item.price * 100, // Store price in cents for precision
             totalPrice: item.totalPrice * 100,
             subTotal: item.subTotal * 100,
-            taxableAmount: item.taxableAmount * 100,
+            taxableAmount: item.taxableAmount ? item.taxableAmount * 100 : 0,
           };
         });
         // Create invoice items
