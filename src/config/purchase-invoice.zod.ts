@@ -23,7 +23,7 @@ const AddPurchaseInvoiceSchema = zod.object({
       quantity: zod.number().optional(),
       totalPrice: zod.number(),
       subTotal: zod.number(),
-      taxableAmount: zod.number(),
+      taxableAmount: zod.number().optional(),
     })
   ),
 });

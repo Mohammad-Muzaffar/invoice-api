@@ -344,7 +344,7 @@ model PurchaseInvoiceItems {
   quantity           Int             @default(1)
   totalPrice         Int
   subTotal           Int
-  taxableAmount      Int
+  taxableAmount      Int?
   invoiceId          String
   purchaseInvoice    PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
